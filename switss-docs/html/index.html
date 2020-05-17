@@ -1,0 +1,1817 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>SWITSS &#8212; SWITSS  documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">SWITSS  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="switss">
+<h1>SWITSS<a class="headerlink" href="#switss" title="Permalink to this headline">¶</a></h1>
+<p>A tool for the computation of Small WITnessing SubSystems in Markov Decision Processes (MDPs) and
+Discrete Time Markov Chains (DTMCs). SWITSS implements exact and heuristic methods for computing small
+witnessing subsystems by reducing the problem to (mixed integer) linear programming. Returned subsystems
+can automatically be rendered graphically and are accompanied with a certificate which proves that
+the subsystem is indeed a witness. Work is based on <a class="reference internal" href="#fjb19" id="id1"><span>[FJB19]</span></a>.</p>
+<p>Contact: <a class="reference external" href="mailto:hans&#46;harder&#37;&#52;&#48;mailbox&#46;tu-dresden&#46;de">hans<span>&#46;</span>harder<span>&#64;</span>mailbox<span>&#46;</span>tu-dresden<span>&#46;</span>de</a></p>
+<div class="section" id="mdp-and-dtmc-classes">
+<h2>MDP and DTMC classes<a class="headerlink" href="#mdp-and-dtmc-classes" title="Permalink to this headline">¶</a></h2>
+<p>A MDP is a tuple <span class="math notranslate nohighlight">\(\mathcal{M} = (S_{\text{all}}, \text{Act}, \textbf{P}, s_0)\)</span>, where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(S_{\text{all}}\)</span> denotes the set of states,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{Act}\)</span> denotes the set of actions,</p></li>
+<li><p><span class="math notranslate nohighlight">\(s_0\)</span> is the initial state,</p></li>
+<li><p>and <span class="math notranslate nohighlight">\(\textbf{P}: S_{\text{all}} \times \text{Act} \times S_{\text{all}} \rightarrow [0,1]\)</span> the transition probability function.</p></li>
+</ul>
+<p>Also,</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\text{Act}(s) \subseteq \text{Act}\)</span> denotes the set of actions that can be enabled in state <span class="math notranslate nohighlight">\(s\)</span></p></li>
+<li><p>For a set of states <span class="math notranslate nohighlight">\(S\)</span> and whenever suitable, <span class="math notranslate nohighlight">\(\mathcal{M}_S = \{ (s,a) \in S \times \text{Act} \mid a \in \text{Act}(s) \}\)</span> also denotes the set of state-action-pairs.</p></li>
+<li><p>For a set of states <span class="math notranslate nohighlight">\(S\)</span>,  <span class="math notranslate nohighlight">\(C_{S} = | \mathcal{M}_{S} |\)</span> denotes the amount of state-action-pairs and <span class="math notranslate nohighlight">\(N_S = | S |\)</span> the amount of states.</p></li>
+</ul>
+<p>For <span class="math notranslate nohighlight">\(\textbf{P}\)</span> we will use a <span class="math notranslate nohighlight">\(C_{S_{\text{all}}} \times N_{S_{\text{all}}}\)</span> transition matrix. Furthermore, every
+state-action pair <span class="math notranslate nohighlight">\((s,a) \in \mathcal{M}_{S_{\text{all}}}\)</span> corresponds to some index
+<span class="math notranslate nohighlight">\(i \in \{0,\dots,C_{S_{\text{all}}}-1\}\)</span> and every state
+<span class="math notranslate nohighlight">\(s \in S\)</span> to some index <span class="math notranslate nohighlight">\(j \in \{0,\dots,N_{S_{\text{all}}}-1\}\)</span> and vice versa.</p>
+<p>DTMCs are treated as special MDPs where only a single action exists, which is then enabled in every state, in which case
+<span class="math notranslate nohighlight">\(C_{S_{\text{all}}}=N_{S_{\text{all}}}\)</span>.</p>
+<div class="section" id="instantiating-dtmcs">
+<h3>Instantiating DTMCs<a class="headerlink" href="#instantiating-dtmcs" title="Permalink to this headline">¶</a></h3>
+<p>DTMCs can be easily instantiated from transition matrices and optional state labelings. Allowed types for the transition matrix include
+numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instances of scipy.sparse.spmatrix).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">P</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">labels</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;target&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">},</span>
+<span class="gp">... </span>           <span class="s2">&quot;init&quot;</span> <span class="p">:</span>   <span class="p">{</span><span class="mi">0</span><span class="p">}</span> <span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">label_to_states</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mc</span><span class="o">.</span><span class="n">digraph</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+<span class="go">&#39;Digraph.gv.pdf&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="instantiating-mdps">
+<h3>Instantiating MDPs<a class="headerlink" href="#instantiating-mdps" title="Permalink to this headline">¶</a></h3>
+<p>Like DTMCs, MDPs require a transition matrix and optional state labelings. Additional parameters include</p>
+<ul class="simple">
+<li><p>a index_by_state_action dictionary that maps state-action-pairs to their corresponding row-index in the transition matrix,</p></li>
+<li><p>and an optional labeling for state-action pairs.</p></li>
+</ul>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">index_by_state_action</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">4</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">actionlabels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">},</span> <span class="s2">&quot;B&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">P</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+<span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">labels</span> <span class="o">=</span> <span class="p">{</span>  <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">},</span>
+<span class="gp">... </span>            <span class="s2">&quot;init&quot;</span>  <span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">}}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mdp</span> <span class="o">=</span> <span class="n">MDP</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">index_by_state_action</span><span class="p">,</span> <span class="n">actionlabels</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mdp</span><span class="o">.</span><span class="n">digraph</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+<span class="go">&#39;Digraph.gv.pdf&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="instantiating-from-prism-model-files">
+<h3>Instantiating from PRISM model files<a class="headerlink" href="#instantiating-from-prism-model-files" title="Permalink to this headline">¶</a></h3>
+<p>SWITSS supports the instantiation of MDPs and DTMCs from .lab and .tra, as well as from .pm files:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/brp.pm&quot;</span><span class="p">,</span>
+<span class="gp">... </span>                          <span class="n">prism_constants</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;N&quot;</span><span class="p">,</span><span class="mi">2</span><span class="p">),(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span>
+<span class="gp">... </span>                          <span class="n">extra_labels</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;uncertain&quot;</span><span class="p">,</span><span class="s2">&quot;s=5 &amp; srep=2&quot;</span><span class="p">),(</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;true&quot;</span><span class="p">)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span>
+<span class="go">DTMC(C=62, N=62, labels={init (1), deadlock (6), uncertain (2), all (62)})</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">MDP</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/csma-2-2.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/csma-2-2.tra&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span>
+<span class="go">MDP(C=1054, N=1038, labels={init (1), deadlock (0), all_delivered (3), one_delivered (179), collision_max_backoff (2)})</span>
+</pre></div>
+</div>
+<p>brp.pm and csma-2-2.lab/.tra can be found in the
+<a class="reference external" href="https://github.com/simonjantsch/switss/tree/master/examples/datasets">examples/datasets</a> directory.</p>
+</div>
+<div class="section" id="rendering-of-dtmcs-and-mdps">
+<h3>Rendering of DTMCs and MDPs<a class="headerlink" href="#rendering-of-dtmcs-and-mdps" title="Permalink to this headline">¶</a></h3>
+<p>In order to make plotting DTMCs and MDPs more customizable, SWITSS implements a <cite>.digraph</cite>-method on DTMCs and MDPs which returns
+<cite>graphviz.Digraph</cite> instances (see <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">here</a>). Changing default behaviour can be obtained
+by specifying functions that return graphviz attribute settings for nodes and edges:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/crowds.pm&quot;</span><span class="p">,</span>
+                       <span class="n">prism_constants</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;TotalRuns&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;CrowdSize&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)},</span>
+                       <span class="n">extra_labels</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span><span class="s2">&quot;observe0&gt;1&quot;</span><span class="p">)})</span>
+
+<span class="k">def</span> <span class="nf">state_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+   <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span> <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">labels</span> <span class="k">else</span> <span class="s2">&quot;blue&quot;</span> <span class="k">if</span> <span class="s2">&quot;init&quot;</span> <span class="ow">in</span> <span class="n">labels</span> <span class="k">else</span> <span class="s2">&quot;green&quot;</span>
+   <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="n">color</span><span class="p">,</span>
+            <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> [</span><span class="si">%s</span><span class="s2">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)),</span>
+            <span class="s2">&quot;style&quot;</span> <span class="p">:</span> <span class="s2">&quot;filled&quot;</span> <span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">trans_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="n">targetidx</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+   <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;orange&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="n">M</span><span class="o">.</span><span class="n">digraph</span><span class="p">(</span><span class="n">state_map</span><span class="o">=</span><span class="n">state_map</span><span class="p">,</span> <span class="n">trans_map</span><span class="o">=</span><span class="n">trans_map</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">MDP</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/test.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/test.tra&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">state_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+   <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span> <span class="k">if</span> <span class="s2">&quot;deadlock&quot;</span> <span class="ow">in</span> <span class="n">labels</span> <span class="k">else</span> <span class="s2">&quot;blue&quot;</span> <span class="k">if</span> <span class="s2">&quot;init&quot;</span> <span class="ow">in</span> <span class="n">labels</span> <span class="k">else</span> <span class="s2">&quot;green&quot;</span>
+   <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="n">color</span><span class="p">,</span>
+            <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> [</span><span class="si">%s</span><span class="s2">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)),</span>
+            <span class="s2">&quot;style&quot;</span> <span class="p">:</span> <span class="s2">&quot;filled&quot;</span> <span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">trans_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">targetidx</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+   <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;orange&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;</span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">action_map</span><span class="p">(</span><span class="n">sourceidx</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+   <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;node&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span> <span class="p">:</span>  <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">action</span><span class="p">,</span>
+                        <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;shape&quot;</span> <span class="p">:</span> <span class="s2">&quot;circle&quot;</span> <span class="p">},</span>
+            <span class="s2">&quot;edge&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;dir&quot;</span> <span class="p">:</span> <span class="s2">&quot;none&quot;</span> <span class="p">}</span> <span class="p">}</span>
+
+<span class="n">M</span><span class="o">.</span><span class="n">digraph</span><span class="p">(</span><span class="n">state_map</span><span class="o">=</span><span class="n">state_map</span><span class="p">,</span> <span class="n">trans_map</span><span class="o">=</span><span class="n">trans_map</span><span class="p">,</span> <span class="n">action_map</span><span class="o">=</span><span class="n">action_map</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>crowds.pm as well as test.lab/.tra can be found in the
+<a class="reference external" href="https://github.com/simonjantsch/switss/tree/master/examples/datasets">examples/datasets</a> directory.
+Additional information about graphviz attributes can be found at <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">https://www.graphviz.org/doc/info/attrs.html</a>.</p>
+</div>
+<div class="section" id="saving-dtmcs-and-mdps">
+<h3>Saving DTMCs and MDPs<a class="headerlink" href="#saving-dtmcs-and-mdps" title="Permalink to this headline">¶</a></h3>
+<p>DTMCs and MDPs can be saved as a .tra/.lab files. In order to so, calling <cite>.save(..)</cite> suffices:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">MDP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">DTMC</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">)</span>
+<span class="go">(&#39;example.tra&#39;, &#39;example.lab&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">MDP</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">],[</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">],[</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">]],</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;example2&quot;</span><span class="p">)</span>
+<span class="go">(&#39;example2.tra&#39;, &#39;example2.lab&#39;)</span>
+</pre></div>
+</div>
+<p>Executable examples for the usage of MDPs and DTMCs can be found in <a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/mdp.ipynb">examples/mdp.ipynb</a>,
+<a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/dtmc.ipynb">examples/dtmc.ipynb</a> and
+<a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/custom_graphs.ipynb">examples/custom_graphs.ipynb</a>.</p>
+</div>
+<div class="section" id="additional-capabilities">
+<h3>Additional capabilities<a class="headerlink" href="#additional-capabilities" title="Permalink to this headline">¶</a></h3>
+<p>DTMCs and MDPs also support</p>
+<ul class="simple">
+<li><p>getting labels of states,</p></li>
+<li><p>getting states that have some label,</p></li>
+<li><p>getting labels of state-actions,</p></li>
+<li><p>getting state-actions that have some label,</p></li>
+<li><p>computing reachability sets,</p></li>
+<li><p>getting actions that are available in some state and</p></li>
+<li><p>getting predecessors &amp; successors of states.</p></li>
+</ul>
+<p>Please see the <a class="reference internal" href="#switss.model.DTMC" title="switss.model.DTMC"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.model.DTMC</span></code></a> and <a class="reference internal" href="#switss.model.MDP" title="switss.model.MDP"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.model.MDP</span></code></a> for more information.</p>
+</div>
+</div>
+<div class="section" id="reachabilityform-rf-class">
+<h2>ReachabilityForm (RF) class<a class="headerlink" href="#reachabilityform-rf-class" title="Permalink to this headline">¶</a></h2>
+<p>A RF is a wrapper for DTMCs/MDPs with the following properties:</p>
+<ul class="simple">
+<li><p>exactly one fail, goal and initial state,</p></li>
+<li><p>fail and goal have exactly one action, which maps only to themselves,</p></li>
+<li><p>the fail state (goal state) has index <span class="math notranslate nohighlight">\(N_{S_{\text{all}}}-1\)</span> (<span class="math notranslate nohighlight">\(N_{S_{\text{all}}}-2\)</span>) and the corresponding state-action-pair index <span class="math notranslate nohighlight">\(C_{S_{\text{all}}}-1\)</span> (<span class="math notranslate nohighlight">\(C_{S_{\text{all}}}-2\)</span>),</p></li>
+<li><p>every state is reachable from the initial state (fail doesn’t need to be reachable) and</p></li>
+<li><p>every state reaches the goal state (except the fail state).</p></li>
+</ul>
+<p>This kind of DTMC/MDP is one of the core components of SWITSS, since this enables the matrices and vectors that are
+essential for the farkas constraints defined in <a class="reference internal" href="#fjb19">FJB19</a> (see table 1):</p>
+<p>In this context,</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(S = S_{\text{all}} \backslash \{ \text{goal}, \text{fail} \}\)</span>,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathcal{M} = \mathcal{M}_S\)</span>,</p></li>
+<li><p><span class="math notranslate nohighlight">\(N = N_S\)</span> and <span class="math notranslate nohighlight">\(C = C_S\)</span>,</p></li>
+</ul>
+<p>Furthermore,</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\textbf{Pr}^{\text{min}}_{s}(\diamond t)\)</span> and <span class="math notranslate nohighlight">\(\textbf{Pr}^{\text{max}}_{s}(\diamond t)\)</span> denote the minimal and maximal probability over all schedulers of eventually reaching state <span class="math notranslate nohighlight">\(t\)</span> when starting from state <span class="math notranslate nohighlight">\(s\)</span>. For DTMCs, <span class="math notranslate nohighlight">\(\textbf{Pr}^{\text{max}}_{s}(\diamond t) = \textbf{Pr}^{\text{min}}_{s}(\diamond t)\)</span>.</p></li>
+<li><p>We also define <span class="math notranslate nohighlight">\(\textbf{Pr}^{\text{min}}(\diamond t) = (\textbf{Pr}_s^{\text{min}}(\diamond t))_{s \in S}\)</span> (respectively for <span class="math notranslate nohighlight">\(\text{max}\)</span>)</p></li>
+</ul>
+<div class="section" id="reduction-of-dtmcs-mdps-to-reachabilityforms">
+<h3>Reduction of DTMCs/MDPs to ReachabilityForms<a class="headerlink" href="#reduction-of-dtmcs-mdps-to-reachabilityforms" title="Permalink to this headline">¶</a></h3>
+<p>RFs support the reduction of DTMCs/MDPs that do not fulfill the criteria to DTMCs/MDPs that do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3.tra&quot;</span><span class="p">)</span>
+<span class="n">Mrf</span><span class="p">,</span> <span class="n">state_map</span><span class="p">,</span> <span class="n">state_action_map</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
+<span class="n">Mrf</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">digraph</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>In this example, <cite>Mrf.system</cite> is the generated DTMC/MDP in reachability form, <cite>state_map</cite> (<cite>state_action_map</cite>) describes a mapping
+from states (state-action pairs) in <cite>M</cite> to states (state-action pairs) in <cite>Mrf.system</cite>. If a state (state-action pair) does not
+occur in the mapping, it was removed on the way.</p>
+<p>If is also possible to directly instantiate a RF from a DTMC/MDP that already is in reachability form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
+<span class="n">Mrf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="reachability-probabilities">
+<h3>Reachability probabilities<a class="headerlink" href="#reachability-probabilities" title="Permalink to this headline">¶</a></h3>
+<p>RFs implement methods for computing maximal and minimal reachability probabilities <span class="math notranslate nohighlight">\(\mathbf{Pr}^{\text{max}}(\diamond goal)\)</span> and
+<span class="math notranslate nohighlight">\(\mathbf{Pr}^{\text{min}}(\diamond goal)\)</span>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="n">index_by_state_action</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+<span class="n">actionlabels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">},</span> <span class="s2">&quot;B&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+
+<span class="n">P</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]]</span>
+
+<span class="n">labels</span> <span class="o">=</span> <span class="p">{</span>  <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="p">{</span><span class="mi">2</span><span class="p">},</span>
+            <span class="s2">&quot;init&quot;</span>  <span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">}}</span>
+
+<span class="n">mdp</span> <span class="o">=</span> <span class="n">MDP</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">index_by_state_action</span><span class="p">,</span> <span class="n">actionlabels</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<span class="n">rf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">mdp</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">rf</span><span class="o">.</span><span class="n">pr_max</span><span class="p">(),</span> <span class="n">rf</span><span class="o">.</span><span class="n">pr_min</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="finding-small-subsystems">
+<h2>Finding small subsystems<a class="headerlink" href="#finding-small-subsystems" title="Permalink to this headline">¶</a></h2>
+<p>In order to search for small subsystems, methods for exact solutions (MILP formulation) and heuristic approaches
+(quotient sum heuristic) are implemented:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span><span class="p">,</span> <span class="n">QSHeur</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">InverseFrequencyInitializer</span><span class="p">,</span> <span class="n">InverseReachabilityInitializer</span>
+
+<span class="n">milpmin</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="n">milpmax</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;gurobi&quot;</span><span class="p">)</span>
+<span class="n">qsheurmin</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">qsheurmax</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
+<span class="n">qsheurmin_iri</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;gurobi&quot;</span><span class="p">,</span> <span class="n">initializertype</span><span class="o">=</span><span class="n">InverseReachabilityInitializer</span><span class="p">)</span>
+<span class="n">qsheurmax_ifi</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;glpk&quot;</span><span class="p">,</span> <span class="n">initializertype</span><span class="o">=</span><span class="n">InverseFrequencyInitializer</span><span class="p">)</span>
+
+<span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
+<span class="n">rf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">)</span>
+<span class="n">problems</span> <span class="o">=</span> <span class="p">[</span><span class="n">milpmin</span><span class="p">,</span> <span class="n">milpmax</span><span class="p">,</span> <span class="n">qsheurmin</span><span class="p">,</span> <span class="n">qsheurmax</span><span class="p">,</span> <span class="n">qsheurmax_ifi</span><span class="p">,</span> <span class="n">qsheurmin_iri</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">problems</span><span class="p">:</span>
+   <span class="n">result</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+   <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+   <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, <cite>MILPExact</cite> corresponds to the MILP Formulation and <cite>QSHeur</cite> to the quotient sum heuristic (see <a class="reference internal" href="#switss.problem.QSHeur" title="switss.problem.QSHeur"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.QSHeur</span></code></a>
+and <a class="reference internal" href="#switss.problem.MILPExact" title="switss.problem.MILPExact"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.MILPExact</span></code></a> for more information on how to specify additional parameters).</p>
+<p>Results of such minimizations are given as <a class="reference internal" href="#switss.problem.ProblemResult" title="switss.problem.ProblemResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.ProblemResult</span></code></a> instances which contain the objective value of the
+solved MILP/LPs, a <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate (dependent on whether “max” or “min” was choosen) and a
+<a class="reference internal" href="#switss.problem.Subsystem" title="switss.problem.Subsystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.Subsystem</span></code></a>-object that contains reachability forms for both super- and subsystem and, additionally, a method
+for rendering subsystems with their corresponding certificate values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span>
+<span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
+<span class="n">rf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">)</span>
+<span class="n">qs</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">qs</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">result</span><span class="o">.</span><span class="n">subsystem</span><span class="o">.</span><span class="n">digraph</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="label-based-minimization">
+<h3>Label-based minimization<a class="headerlink" href="#label-based-minimization" title="Permalink to this headline">¶</a></h3>
+<p>SWITSS also implements label-based minimization, i.e. minimization based on the number of labels in a system. To do so, one can
+add lists of labels to <cite>MILPExact</cite> or <cite>QSHeur</cite> instances:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span>
+
+<span class="n">P</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]]</span>
+
+<span class="n">labels</span> <span class="o">=</span> <span class="p">{</span>  <span class="s2">&quot;target&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">8</span><span class="p">},</span>
+            <span class="s2">&quot;init&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">},</span>
+            <span class="s2">&quot;group1&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">6</span><span class="p">},</span>
+            <span class="s2">&quot;group2&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">7</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">2</span><span class="p">},</span>
+            <span class="s2">&quot;group3&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">}</span> <span class="p">}</span>
+
+<span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">label_to_states</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+<span class="n">rf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
+<span class="n">milp</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="n">result_with_labels</span> <span class="o">=</span> <span class="n">milp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;group1&quot;</span><span class="p">,</span><span class="s2">&quot;group2&quot;</span><span class="p">,</span><span class="s2">&quot;group3&quot;</span><span class="p">])</span>
+<span class="n">result_no_labels</span> <span class="o">=</span> <span class="n">milp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result_with_labels</span><span class="o">.</span><span class="n">subsystem</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result_no_labels</span><span class="o">.</span><span class="n">subsystem</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Comparing the results of this particular instance, one will notice that in the second case (<cite>result_no_labels</cite>) the subsystem
+yields a much smaller size than compared with the first instance. In the first case however, label <cite>group2</cite> was completely eliminated.
+For exectuable examples, see <a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/groups.ipynb">examples/groups.ipynb</a>.</p>
+</div>
+<div class="section" id="iterative-results">
+<h3>Iterative results<a class="headerlink" href="#iterative-results" title="Permalink to this headline">¶</a></h3>
+<p>Repeated application of <cite>QSHeur</cite> yields multiple small subsystems along the way. By calling <cite>.solveiter</cite> instead
+of <cite>.solve</cite> on <cite>problem.ProblemFormulation</cite> instances, one can iterate over these solutions. In fact, <cite>.solve</cite> uses <cite>.solveiter</cite>
+itself and returns only the last result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span>
+<span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
+<span class="n">rf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">mc</span><span class="p">)</span>
+<span class="n">qs</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">qs</span><span class="o">.</span><span class="n">solveiter</span><span class="p">(</span><span class="n">rf</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">):</span>
+   <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+   <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="certificates">
+<h2>Certificates<a class="headerlink" href="#certificates" title="Permalink to this headline">¶</a></h2>
+<p>SWITSS supports the generation and the checking of farkas certificates. This can be used, for example, for validating the results
+of solved problem instances:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="kn">import</span> <span class="n">generate_farkas_certificate</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/leader_sync3_2.pm&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">,</span><span class="s2">&quot;elected&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">generate_farkas_certificate</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
+<span class="go">array([1.3333333 , 0.16666667, 0.16666667, 0.16666667, 0.16666667,</span>
+<span class="go">       0.16666667, 0.16666667, 0.16666667, 0.16666667, 0.16666667,</span>
+<span class="go">       0.16666667, 0.16666667, 0.16666667, 0.16666667, 0.16666667,</span>
+<span class="go">       0.16666667, 0.16666667, 0.16666667, 0.16666667, 0.16666667,</span>
+<span class="go">       0.16666667, 0.16666667, 0.16666667, 0.16666667, 0.16666667,</span>
+<span class="go">       1.        ])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/leader_sync3_2.pm&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">,</span><span class="s2">&quot;elected&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="kn">import</span> <span class="n">check_farkas_certificate</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">milp</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">milp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">farkas_cert</span>
+<span class="go">array([0.1, 0. , 0. , 0. , 0. , 0.8, 0. , 0. , 0. , 0. , 0. , 0. , 0. ,</span>
+<span class="go">       0.8, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 1. , 0. , 1. ])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">check_farkas_certificate</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">farkas_cert</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Supported are checks for all 4 entries of table 1 of <a class="reference internal" href="#fjb19" id="id3"><span>[FJB19]</span></a>. For more details on both methods, please see <a class="reference internal" href="#certification">Certification</a>.
+For executable examples, see
+<a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/certificates.ipynb">examples/certificates.ipynb</a>.</p>
+</div>
+<div class="section" id="benchmarks">
+<h2>Benchmarks<a class="headerlink" href="#benchmarks" title="Permalink to this headline">¶</a></h2>
+<p>In order to make heuristics or exact solutions better comparable, one can run benchmarks on different models, with different
+methods and for varying thresholds. Benchmarks can also be plotted with the help of <cite>matplotlib</cite> for fast visualization:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span><span class="p">,</span> <span class="n">MILPExact</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.benchmarks</span> <span class="kn">import</span> <span class="n">benchmarks</span> <span class="k">as</span> <span class="n">bm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">qs</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">milp</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataqs</span><span class="p">,</span> <span class="n">datamilp</span> <span class="o">=</span> <span class="n">bm</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="p">[</span><span class="n">qs</span><span class="p">,</span><span class="n">milp</span><span class="p">],</span> <span class="n">from_thr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">to_thr</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">dataqs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;states-thr&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;QSHeur min vs. MILPExact min&quot;</span><span class="p">)</span>
+<span class="go">&lt;matplotlib.axes._subplots.AxesSubplot object at 0x7fc65d4f3f60&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">datamilp</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;states-thr&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="go">&lt;matplotlib.axes._subplots.AxesSubplot object at 0x7fc65d4f3f60&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://github.com/simonjantsch/switss/blob/master/examples/benchmarks.ipynb">examples/benchmarks.ipynb</a> for more executable
+examples and <a class="reference internal" href="#benchmarking">Benchmarking</a> for more details on <cite>run</cite> and <cite>render</cite>.</p>
+</div>
+<div class="section" id="modules-classes-reference">
+<h2>Modules &amp; classes reference<a class="headerlink" href="#modules-classes-reference" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-switss.model">
+<span id="models"></span><h3>Models<a class="headerlink" href="#module-switss.model" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="switss.model.AbstractMDP">
+<em class="property">class </em><code class="sig-prename descclassname">switss.model.</code><code class="sig-name descname">AbstractMDP</code><span class="sig-paren">(</span><em class="sig-param">P</em>, <em class="sig-param">index_by_state_action</em>, <em class="sig-param">label_to_actions={}</em>, <em class="sig-param">label_to_states={}</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract superclass for Markov Decision Processes (MDPs) and Discrete Time Markov Chains (DTMCs)
+that supports labeling for states and actions, getting successors/predecessors, computing 
+reachability sets, rendering of MDPs/DTMCs as graphviz digraphs, loading from .pm-files and 
+loading/storing from/to .lab,.tra files.</p>
+<p>Instantiates an AbstractMDP from a transition matrix, a bidirectional
+mapping from state-action pairs to corresponding transition matrix entries and labelings for states and actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P</strong> (<em>Either 2d-list</em><em>, </em><em>numpy.matrix</em><em>, </em><em>numpy.array</em><em> or </em><em>scipy.sparse.spmatrix</em>) – <span class="math notranslate nohighlight">\(C_{S_{\text{all}}} \times N_{S_{\text{all}}}\)</span> transition matrix.</p></li>
+<li><p><strong>index_by_state_action</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>,</em><em>int</em><em>]</em><em>,</em><em>int</em><em>]</em>) – A bijection of state-action pairs <span class="math notranslate nohighlight">\((s,a) \in \mathcal{M}_{S_{\text{all}}}\)</span> 
+to indices <span class="math notranslate nohighlight">\(i=0,\dots,C_{S_{\text{all}}}-1\)</span> and vice versa.</p></li>
+<li><p><strong>label_to_actions</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>Set</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>,</em><em>int</em><em>]</em><em>]</em><em>]</em>) – Mapping from labels to sets of state-action pairs.</p></li>
+<li><p><strong>label_to_states</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>Set</em><em>[</em><em>int</em><em>]</em><em>]</em>) – Mapping from labels to sets of states.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.model.AbstractMDP.states_by_label">
+<em class="property">property </em><code class="sig-name descname">states_by_label</code><a class="headerlink" href="#switss.model.AbstractMDP.states_by_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a mapping from labels to states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mapping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, Set[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.labels_by_state">
+<em class="property">property </em><code class="sig-name descname">labels_by_state</code><a class="headerlink" href="#switss.model.AbstractMDP.labels_by_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a mapping from states to labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mapping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[int, Set[str]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.actions_by_label">
+<em class="property">property </em><code class="sig-name descname">actions_by_label</code><a class="headerlink" href="#switss.model.AbstractMDP.actions_by_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a mapping from labels to actions (given as state-action-pairs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mapping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, Set[Tuple[int,int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.labels_by_action">
+<em class="property">property </em><code class="sig-name descname">labels_by_action</code><a class="headerlink" href="#switss.model.AbstractMDP.labels_by_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a mapping from actions (given as state-action-pairs) to labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mapping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[Tuple[int,int], Set[str]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.actions_by_state">
+<em class="property">property </em><code class="sig-name descname">actions_by_state</code><a class="headerlink" href="#switss.model.AbstractMDP.actions_by_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a mapping from states to sets of (available) actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The mapping.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[int, Set[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.reachable_mask">
+<code class="sig-name descname">reachable_mask</code><span class="sig-paren">(</span><em class="sig-param">from_set</em>, <em class="sig-param">mode</em>, <em class="sig-param">blocklist={}</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.reachable_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an <span class="math notranslate nohighlight">\(N_{S_{\text{all}}}\)</span>-dimensional vector which has a True-entry (False otherwise) for
+every state index that is reachable from ‘from_set’ in the given search mode (forward or backward).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>from_set</strong> (<em>Set</em><em>[</em><em>int</em><em>]</em>) – The set of states the search should start from.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – Either ‘forward’ or ‘backward’. Defines the direction of search.</p></li>
+<li><p><strong>blocklist</strong> (<em>Set</em><em>[</em><em>int</em><em>]</em>) – Set of states that should block any further search.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Resulting vector.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.predecessors">
+<code class="sig-name descname">predecessors</code><span class="sig-paren">(</span><em class="sig-param">fromidx</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.predecessors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yields an iterator that computes state-action-pairs (s,a) such that
+applying action a to state s yields the given state with some probability p &gt; 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fromidx</strong> (<em>int</em>) – The given state.</p>
+</dd>
+<dt class="field-even">Yield</dt>
+<dd class="field-even"><p>A state-action-pair (s,a)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Iterator[Tuple[int, int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.successors">
+<code class="sig-name descname">successors</code><span class="sig-paren">(</span><em class="sig-param">fromidx</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.successors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yields an iterator that computes state-action-pairs (d,a) where applying action a to
+the given state yields state d with some probability p &gt; 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fromidx</strong> (<em>int</em>) – The given state.</p>
+</dd>
+<dt class="field-even">Yield</dt>
+<dd class="field-even"><p>A state-action-pair (d,a)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Iterator[Tuple[int,int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.from_file">
+<em class="property">classmethod </em><code class="sig-name descname">from_file</code><span class="sig-paren">(</span><em class="sig-param">label_file_path</em>, <em class="sig-param">tra_file_path</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an instance of this model from a given .lab and .tra file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label_file_path</strong> (<em>str</em>) – Path of .lab-file.</p></li>
+<li><p><strong>tra_file_path</strong> (<em>str</em>) – Path of .tra-file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance of given class.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>cls</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.from_prism_model">
+<em class="property">classmethod </em><code class="sig-name descname">from_prism_model</code><span class="sig-paren">(</span><em class="sig-param">model_file_path</em>, <em class="sig-param">prism_constants={}</em>, <em class="sig-param">extra_labels={}</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.from_prism_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an instance of this model from a PRISM model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_file_path</strong> (<em>str</em>) – File path of .pm-model.</p></li>
+<li><p><strong>prism_constants</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – A dictionary of constants to be assigned in the model, defaults to {}.</p></li>
+<li><p><strong>extra_labels</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A dictionary that defines additional labels (other than the ones defined in the prism module) to 
+be added to the .lab file. The keys are label names and the values are PRISM expressions over the module variables, 
+defaults to {}.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Instance of the class this function is called from.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[This Class]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.save">
+<em class="property">abstract </em><code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the .tra and .lab-file according to the given filepath.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em>) – the file path</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>path of .tra and .lab-file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[str,str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.AbstractMDP.digraph">
+<em class="property">abstract </em><code class="sig-name descname">digraph</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.AbstractMDP.digraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders this instance as a graphviz.Digraph object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.model.DTMC">
+<em class="property">class </em><code class="sig-prename descclassname">switss.model.</code><code class="sig-name descname">DTMC</code><span class="sig-paren">(</span><em class="sig-param">P</em>, <em class="sig-param">index_by_state_action=None</em>, <em class="sig-param">label_to_states={}</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.DTMC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates a DTMC from a transition matrix and labelings for states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P</strong> (<em>Either 2d-list</em><em>, </em><em>numpy.matrix</em><em>, </em><em>numpy.array</em><em> or </em><em>scipy.sparse.spmatrix</em>) – <span class="math notranslate nohighlight">\(N_{S_{\text{all}}} \times N_{S_{\text{all}}}\)</span> transition matrix.</p></li>
+<li><p><strong>index_by_state_action</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>,</em><em>int</em><em>]</em><em>,</em><em>int</em><em>]</em>) – Mapping from states to their corresponding row-entries. Every
+key must have 0 for its action value. If None, then every row-index corresponds to the
+same column-index.</p></li>
+<li><p><strong>label_to_states</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>Set</em><em>[</em><em>int</em><em>]</em><em>]</em>) – Mapping from labels to sets of states.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.model.DTMC.digraph">
+<code class="sig-name descname">digraph</code><span class="sig-paren">(</span><em class="sig-param">state_map=None</em>, <em class="sig-param">trans_map=None</em>, <em class="sig-param">action_map=None</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.DTMC.digraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <cite>graphviz.Digraph</cite> object from this instance. When a digraph object is created, 
+new nodes are added for states plus additional edges for transitions between states. 
+<cite>state_map</cite> and <cite>trans_map</cite> are functions that, on some input, compute keyword arguments for
+the digraph instance. If any one of these is None, the default mapping will be used. <cite>action_map</cite>
+is ignored.</p>
+<p>For example, these functions below are used as default parameters if no <cite>state_map</cite> or <cite>trans_map</cite> is specified.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">standard_state_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span><span class="n">labels</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="n">color_from_hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">labels</span><span class="p">))),</span>
+             <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;State </span><span class="si">%d</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">stateidx</span><span class="p">,</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)),</span>
+             <span class="s2">&quot;style&quot;</span> <span class="p">:</span> <span class="s2">&quot;filled&quot;</span> <span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">standard_trans_map</span><span class="p">(</span><span class="n">sourceidx</span><span class="p">,</span> <span class="n">destidx</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> 
+             <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>where <cite>color_from_hash</cite> is imported from <cite>switss.utils</cite>. For further information on graphviz attributes, 
+see <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">https://www.graphviz.org/doc/info/attrs.html</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state_map</strong> (<em>(</em><em>stateidx : int</em><em>, </em><em>labels : Set</em><em>[</em><em>str</em><em>]</em><em>) </em><em>-&gt; Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that computes parameters for state-nodes, defaults to None.</p></li>
+<li><p><strong>trans_map</strong> (<em>(</em><em>sourceidx : int</em><em>, </em><em>destidx : int</em><em>, </em><em>p : float</em><em>) </em><em>-&gt; Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that computes parameters for edges between actions and nodes, defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The digraph instance.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>graphviz.Digraph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.DTMC.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.DTMC.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the .tra and .lab-file according to the given filepath.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em>) – the file path</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>path of .tra and .lab-file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[str,str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.model.MDP">
+<em class="property">class </em><code class="sig-prename descclassname">switss.model.</code><code class="sig-name descname">MDP</code><span class="sig-paren">(</span><em class="sig-param">P</em>, <em class="sig-param">index_by_state_action</em>, <em class="sig-param">label_to_actions={}</em>, <em class="sig-param">label_to_states={}</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.MDP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates a MDP from a transition matrix, a bidirectional
+mapping from state-action pairs to corresponding transition matrix entries and labelings for states and actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P</strong> (<em>Either 2d-list</em><em>, </em><em>numpy.matrix</em><em>, </em><em>numpy.array</em><em> or </em><em>scipy.sparse.spmatrix</em>) – <span class="math notranslate nohighlight">\(C_{S_{\text{all}}} \times N_{S_{\text{all}}}\)</span> transition matrix.</p></li>
+<li><p><strong>index_by_state_action</strong> (<em>Dict</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>,</em><em>int</em><em>]</em><em>,</em><em>int</em><em>]</em>) – A bijection of state-action pairs <span class="math notranslate nohighlight">\((s,a) \in \mathcal{M}_{S_{\text{all}}}\)</span> 
+to indices <span class="math notranslate nohighlight">\(i=0,\dots,C_{S_{\text{all}}}-1\)</span> and vice versa.</p></li>
+<li><p><strong>label_to_actions</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>Set</em><em>[</em><em>Tuple</em><em>[</em><em>int</em><em>,</em><em>int</em><em>]</em><em>]</em><em>]</em>) – Mapping from labels to sets of state-action pairs.</p></li>
+<li><p><strong>label_to_states</strong> (<em>Dict</em><em>[</em><em>str</em><em>,</em><em>Set</em><em>[</em><em>int</em><em>]</em><em>]</em>) – Mapping from labels to sets of states.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.model.MDP.digraph">
+<code class="sig-name descname">digraph</code><span class="sig-paren">(</span><em class="sig-param">state_map=None</em>, <em class="sig-param">trans_map=None</em>, <em class="sig-param">action_map=None</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.MDP.digraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a graphviz.Digraph object from this instance. When a digraph object is created, 
+new nodes are added for states and actions plus additional edges between actions and nodes. 
+<cite>state_map</cite>, <cite>trans_map</cite> and <cite>action_map</cite> are functions that, on some input, compute keyword arguments for
+the digraph instance. If any one of these is None, the default mapping will be used.</p>
+<p>For example, these functions below are used as default parameters if no <cite>state_map</cite>, <cite>trans_map</cite> or <cite>action_map</cite> is specified.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">standard_state_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span><span class="n">labels</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;style&quot;</span> <span class="p">:</span> <span class="s2">&quot;filled&quot;</span><span class="p">,</span>
+             <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="n">color_from_hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">labels</span><span class="p">))),</span>
+             <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="s2">&quot;State </span><span class="si">%d</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">stateidx</span><span class="p">,</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span> <span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">standard_trans_map</span><span class="p">(</span><span class="n">sourceidx</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">destidx</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> 
+             <span class="s2">&quot;label&quot;</span> <span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span> <span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">standard_action_map</span><span class="p">(</span><span class="n">sourceidx</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;node&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span> <span class="p">:</span>  <span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">labels</span><span class="p">)),</span>
+                        <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> 
+                        <span class="s2">&quot;shape&quot;</span> <span class="p">:</span> <span class="s2">&quot;rectangle&quot;</span> <span class="p">},</span> 
+             <span class="s2">&quot;edge&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;color&quot;</span> <span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;dir&quot;</span> <span class="p">:</span> <span class="s2">&quot;none&quot;</span> <span class="p">}</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>where <cite>color_from_hash</cite> is imported from <cite>switss.utils</cite>. For further information on graphviz attributes, 
+see <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">https://www.graphviz.org/doc/info/attrs.html</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>state_map</strong> (<em>(</em><em>stateidx : int</em><em>, </em><em>labels : Set</em><em>[</em><em>str</em><em>]</em><em>) </em><em>-&gt; Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that computes parameters for state-nodes, defaults to None.</p></li>
+<li><p><strong>trans_map</strong> (<em>(</em><em>sourceidx : int</em><em>, </em><em>action : int</em><em>, </em><em>destidx : int</em><em>, </em><em>p : float</em><em>) </em><em>-&gt; Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that computes parameters for edges between actions and nodes, defaults to None.</p></li>
+<li><p><strong>action_map</strong> (<em>(</em><em>sourceidx : int</em><em>, </em><em>action : int</em><em>, </em><em>sourcelabels : Set</em><em>[</em><em>str</em><em>]</em><em>) </em><em>-&gt; Dict</em><em>[</em><em>str</em><em>,</em><em>Dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A function that computes parameters for action-nodes and edges between nodes and corresponding actions, defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The digraph instance.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>graphviz.Digraph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.MDP.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">filepath</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.MDP.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the .tra and .lab-file according to the given filepath.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filepath</strong> (<em>str</em>) – the file path</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>path of .tra and .lab-file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[str,str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.model.ReachabilityForm">
+<em class="property">class </em><code class="sig-prename descclassname">switss.model.</code><code class="sig-name descname">ReachabilityForm</code><span class="sig-paren">(</span><em class="sig-param">system</em>, <em class="sig-param">initial_label</em>, <em class="sig-param">target_label='rf_target'</em>, <em class="sig-param">fail_label='rf_fail'</em>, <em class="sig-param">ignore_consistency_checks=False</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm" title="Permalink to this definition">¶</a></dt>
+<dd><p>A reachability form is a wrapper for special DTMCs/MDPs with dedicated initial and target states. 
+In particular, the following properties are fulfilled:</p>
+<ul class="simple">
+<li><p>exactly one fail, goal and initial state,</p></li>
+<li><p>fail and goal have exactly one action, which maps only to themselves,</p></li>
+<li><p>the fail state (goal state) has index <span class="math notranslate nohighlight">\(N_{S_{\text{all}}}-1\)</span> (<span class="math notranslate nohighlight">\(N_{S_{\text{all}}}-2\)</span>) and the corresponding state-action-pair index <span class="math notranslate nohighlight">\(C_{S_{\text{all}}}-1\)</span> (<span class="math notranslate nohighlight">\(C_{S_{\text{all}}}-2\)</span>),</p></li>
+<li><p>every state is reachable from the initial state (fail doesn’t need to be reachable) and</p></li>
+<li><p>every state reaches the goal state (except the fail state)</p></li>
+</ul>
+<p>Instantiates a RF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system</strong> (<a class="reference internal" href="#switss.model.AbstractMDP" title="switss.model.AbstractMDP"><em>model.AbstractMDP</em></a>) – The MDP/DTMC that fulfills the specified properties.</p></li>
+<li><p><strong>initial_label</strong> (<em>str</em>) – Label of initial state - there must be exactly one</p></li>
+<li><p><strong>target_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of target state - there must be exactly one, defaults to “rf_target”</p></li>
+<li><p><strong>fail_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of fail state - there must be exactly one, defaults to “rf_fail”</p></li>
+<li><p><strong>ignore_consistency_checks</strong> (<em>bool</em><em>, </em><em>optional</em>) – If set to False, checks consistency of given model (i.e. if the properties are satisfied),
+defaults to False</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.A">
+<em class="property">property </em><code class="sig-name descname">A</code><a class="headerlink" href="#switss.model.ReachabilityForm.A" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <span class="math notranslate nohighlight">\(C \times N\)</span> matrix <span class="math notranslate nohighlight">\(\mathbf{A}\)</span> where</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\textbf{A}((s,a), d) = \begin{cases} 1 - \textbf{P}((s,a), d) &amp;\text{ if } d = s \\
+- \textbf{P}((s,a), d) &amp;\text{ if } d \neq s \end{cases}, \end{split}\]</div>
+<p>for all <span class="math notranslate nohighlight">\((s,a),d \in \mathcal{M} \times S\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.to_target">
+<em class="property">property </em><code class="sig-name descname">to_target</code><a class="headerlink" href="#switss.model.ReachabilityForm.to_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a vector of length <span class="math notranslate nohighlight">\(C\)</span> <span class="math notranslate nohighlight">\(\textbf{b}\)</span> where</p>
+<div class="math notranslate nohighlight">
+\[\textbf{b}((s,a)) = \text{P}((s,a),\text{goal}),\]</div>
+<p>for all <span class="math notranslate nohighlight">\((s,a) \in \mathcal{M}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.assert_consistency">
+<em class="property">static </em><code class="sig-name descname">assert_consistency</code><span class="sig-paren">(</span><em class="sig-param">system</em>, <em class="sig-param">initial_label</em>, <em class="sig-param">target_label='rf_target'</em>, <em class="sig-param">fail_label='rf_fail'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.assert_consistency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether a system fulfills the reachability form properties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system</strong> (<a class="reference internal" href="#switss.model.AbstractMDP" title="switss.model.AbstractMDP"><em>model.AbstractMDP</em></a>) – The system</p></li>
+<li><p><strong>initial_label</strong> (<em>str</em>) – Label of initial state</p></li>
+<li><p><strong>target_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of target state, defaults to “rf_target”</p></li>
+<li><p><strong>fail_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of fail state, defaults to “rf_fail”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.reduce">
+<em class="property">static </em><code class="sig-name descname">reduce</code><span class="sig-paren">(</span><em class="sig-param">system</em>, <em class="sig-param">initial_label</em>, <em class="sig-param">target_label</em>, <em class="sig-param">new_target_label='rf_target'</em>, <em class="sig-param">new_fail_label='rf_fail'</em>, <em class="sig-param">debug=False</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.reduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reduces a system to a system in reachability form. 
+The transformation does a forward search starting at the initial state, then a 
+backwards search starting from the targets states and then removes all states 
+that happen to be not reachable in at least one of these searches. Transitions that 
+lead to removed states are mapped to a dedicated new “fail”-state (default label is “rf_fail”). 
+All old target states are remapped to a dedicated new “target”-state (default label is “rf_target”).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system</strong> (<a class="reference internal" href="#switss.model.AbstractMDP" title="switss.model.AbstractMDP"><em>model.AbstractMDP</em></a>) – The system that should be reduced.</p></li>
+<li><p><strong>initial_label</strong> (<em>str</em>) – Label of initial state (there must be exactly one)</p></li>
+<li><p><strong>target_label</strong> (<em>str</em>) – Label of target state (there must be at least one)</p></li>
+<li><p><strong>new_target_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of dedicated new target state, defaults to “rf_target”</p></li>
+<li><p><strong>new_fail_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label of dedicated new fail state, defaults to “rf_fail”</p></li>
+<li><p><strong>debug</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, additional diagnostic information is printed, defaults to False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A triple (RF, state_map, state_action_map) where state_map (state_action_map) is a mapping from system states
+(state-actions pairs) to states (state-action pairs) of the reduced system. If a state (state-action pair) is not a 
+key in the dictionary, it was removed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm">model.ReachabilityForm</a>, Dict[int,int], Dict[Tuple[int,int],Tuple[int,int]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.system">
+<em class="property">property </em><code class="sig-name descname">system</code><a class="headerlink" href="#switss.model.ReachabilityForm.system" title="Permalink to this definition">¶</a></dt>
+<dd><p>The underlying system (instance of model.AbstractMDP)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.fark_z_constraints">
+<code class="sig-name descname">fark_z_constraints</code><span class="sig-paren">(</span><em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.fark_z_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a matrix <span class="math notranslate nohighlight">\(M_z\)</span> and a vector <span class="math notranslate nohighlight">\(rhs_z\)</span> such that for a <span class="math notranslate nohighlight">\(N\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{z}\)</span></p>
+<div class="math notranslate nohighlight">
+\[M_z\, \mathbf{z} \leq rhs_z \quad \text{  iff  } \quad 
+\mathbf{A} \, \mathbf{z} \leq \mathbf{b} \land \mathbf{z}(\texttt{init}) \geq \lambda
+\quad \text{  iff  } \quad
+\mathbf{z} \in \mathcal{P}^{\text{min}}(\lambda)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>threshold</strong> (<em>Float</em>) – The threshold <span class="math notranslate nohighlight">\(\lambda\)</span> for which the Farkas z-constraints should be constructed</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><span class="math notranslate nohighlight">\((C+1) \times N\)</span>-matrix <span class="math notranslate nohighlight">\(M_z\)</span>, and vector of length <span class="math notranslate nohighlight">\(C+1\)</span> <span class="math notranslate nohighlight">\(rhs_z\)</span></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[scipy.sparse.dok_matrix, np.ndarray[float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.fark_y_constraints">
+<code class="sig-name descname">fark_y_constraints</code><span class="sig-paren">(</span><em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.fark_y_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a matrix <span class="math notranslate nohighlight">\(M_y\)</span> and a vector <span class="math notranslate nohighlight">\(rhs_y\)</span> such that for a <span class="math notranslate nohighlight">\(C\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{y}\)</span></p>
+<div class="math notranslate nohighlight">
+\[M_y\, \mathbf{y} \leq rhs_y \quad \text{  iff  } \quad
+\mathbf{y} \, \mathbf{A} \leq \delta_{\texttt{init}} \land \mathbf{b} \, \mathbf{y} \geq \lambda
+\quad \text{  iff  } \quad
+\mathbf{y} \in \mathcal{P}^{\text{max}}(\lambda)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\lambda\)</span> is the threshold. The vector <span class="math notranslate nohighlight">\(\delta_{\texttt{init}}\)</span> is 1 for the initial state, and otherwise 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>threshold</strong> (<em>Float</em>) – The threshold <span class="math notranslate nohighlight">\(\lambda\)</span> for which the Farkas y-constraints should be constructed</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><span class="math notranslate nohighlight">\((N+1) \times C\)</span>-matrix <span class="math notranslate nohighlight">\(M_y\)</span>, and <span class="math notranslate nohighlight">\(N+1\)</span>-vector <span class="math notranslate nohighlight">\(rhs_y\)</span></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[scipy.sparse.dok_matrix, np.ndarray[float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.max_z_state">
+<code class="sig-name descname">max_z_state</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.max_z_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a solution to the LP</p>
+<div class="math notranslate nohighlight">
+\[\max \, \sum_{s} \mathbf{x}(s) \quad \text{ subject to } \quad \mathbf{x} \in \mathcal{P}^{\text{min}}(0)\]</div>
+<p>The solution vector corresponds to the minimal reachabiliy probability, i.e. 
+<span class="math notranslate nohighlight">\(\mathbf{x}^*(s) = \mathbf{Pr}^{\text{min}}_s(\diamond \text{goal})\)</span> for all <span class="math notranslate nohighlight">\(s \in S\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.max_z_state_action">
+<code class="sig-name descname">max_z_state_action</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.max_z_state_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Let <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> be a solution vector to <cite>max_z_state</cite>. This function then returns a 
+<span class="math notranslate nohighlight">\(C\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{v}\)</span> such that</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{v}((s,a)) = \mathbf{P}((s,a),\text{goal}) + \sum_{d \in S } \mathbf{P}((s,a),d) \mathbf{x}(d)\]</div>
+<p>for all <span class="math notranslate nohighlight">\((s,a) \in \mathcal{M}\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – [description], defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.max_y_state_action">
+<code class="sig-name descname">max_y_state_action</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.max_y_state_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a solution to the LP</p>
+<div class="math notranslate nohighlight">
+\[\max \, \sum_{(s,a)} \mathbf{x}((s,a)) \quad \text{ subject to } \quad \mathbf{x} \in \mathcal{P}^{\text{max}}(0)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.max_y_state">
+<code class="sig-name descname">max_y_state</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.max_y_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Let <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> be a solution vector to <cite>max_y_state_action</cite>. This function then returns a 
+<span class="math notranslate nohighlight">\(N\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{v}\)</span> such that</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{v}(s) = \sum_{a \in \text{Act}(s)} \mathbf{x}((s,a))\]</div>
+<p>for all <span class="math notranslate nohighlight">\(s \in S\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.pr_min">
+<code class="sig-name descname">pr_min</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.pr_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an <span class="math notranslate nohighlight">\(N\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> such that 
+<span class="math notranslate nohighlight">\(\mathbf{x}(s) = \mathbf{Pr}^{\text{min}}_s(\diamond \text{goal})\)</span> for <span class="math notranslate nohighlight">\(s \in S\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.model.ReachabilityForm.pr_max">
+<code class="sig-name descname">pr_max</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.pr_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an <span class="math notranslate nohighlight">\(N\)</span> vector <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> such that <span class="math notranslate nohighlight">\(\mathbf{x}(s) = 
+\mathbf{Pr}^{\text{max}}_s(\diamond \text{goal})\)</span> for <span class="math notranslate nohighlight">\(s \in S\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result vector</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="problem">
+<h3>Problem<a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="note-on-initializers-and-updaters">
+<h4>Note on Initializers and Updaters<a class="headerlink" href="#note-on-initializers-and-updaters" title="Permalink to this headline">¶</a></h4>
+<p>The Initializer and Updater-classes rely ‘groups’ of states/state-action pairs for
+computing initial/updated objective functions in order unify the concept of label-based and
+default minimization. If label-based minimization was choosen, every
+group corresponds to some label and thereby to a set of states that have this label.
+If label-based minimization was not choosen, every group corresponds to some state or
+state-action pair (i.e. every group has only one member).</p>
+<p>The objective functions that are returned are given as lists of group-index/group-weight pairings.
+For now, define that <span class="math notranslate nohighlight">\(V = \{ v_1, \dots, v_m \}\)</span> is the set of group indices, i.e. every objective function
+assigns a value to all <span class="math notranslate nohighlight">\(v \in V\)</span>. If a group maps to sets of states (state-action pairs), we
+will write <span class="math notranslate nohighlight">\(S_v\)</span> (<span class="math notranslate nohighlight">\(\mathcal{M}_v\)</span>) to indicate this particular set.</p>
+<span class="target" id="module-switss.problem"></span><dl class="class">
+<dt id="switss.problem.AllOnesInitializer">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">AllOnesInitializer</code><span class="sig-paren">(</span><em class="sig-param">indicator_to_group</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.AllOnesInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives each group the same weight, i.e.</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{o}_0(v) = 1, \quad \forall v \in V \]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.AllOnesInitializer.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.AllOnesInitializer.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the initial objective function <span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The initial objective function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>List[Tuple[int,float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.Initializer">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">Initializer</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">indicator_to_group</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Initializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract base class for QSHeur-initializers. An initializer 
+computes the initial objective function <span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> of a QSHeur-problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.Initializer.initialize">
+<em class="property">abstract </em><code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Initializer.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the initial objective function <span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The initial objective function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>List[Tuple[int,float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.InverseFrequencyInitializer">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">InverseFrequencyInitializer</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">indicator_to_group</em>, <em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseFrequencyInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.InverseFrequencyInitializer.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseFrequencyInitializer.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the initial objective function <span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The initial objective function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>List[Tuple[int,float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.InverseReachabilityInitializer">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">InverseReachabilityInitializer</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">indicator_to_group</em>, <em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseReachabilityInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives groups the most weight that have a low probability of reaching the goal state.</p>
+<p>If the objective function has to be computed for the z-Form, we compute the average goal reachability
+probability over all states that are in the group and then return the inverse value:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{o}_0(v) = \left( \frac{1}{|S_v|} \sum_{s \in S_v} 
+\mathbf{Pr}_s^{\text{min}}(\diamond \text{goal}) \right)^{-1} \]</div>
+<p>This gives a high weight to groups that have a low probability of reaching the goal state.</p>
+<p>If the objective function has to be computed for the y-Form, we compute the average goal reachability
+probability over the states that are yield by the state-action pairs.</p>
+<p>Let</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{x}((s,a)) = \mathbf{P}((s,a),\text{goal}) + \sum_{d \in S} 
+    \mathbf{P}((s,a),d) \mathbf{Pr}^{\text{min}}_d(\diamond \text{goal})\]</div>
+<p>We then define</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{o}_0(v) = \left(  \frac{1}{|\mathcal{M}_v|} \sum_{(s,a) \in \mathcal{M}_v}  \mathbf{x}((s,a)) \right)^{-1}\]</div>
+<p>The reasoning is similar to the z-Form; state-action pairs that yield states which have a low probability
+of reaching the goal state get a high weight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.InverseReachabilityInitializer.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseReachabilityInitializer.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the initial objective function <span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The initial objective function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>List[Tuple[int,float]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.InverseResultUpdater">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">InverseResultUpdater</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">indicator_to_group</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseResultUpdater" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives most weight to groups that were removed in the last iteration (i.e. <span class="math notranslate nohighlight">\(QS_{\sigma}(i)(v) = 0\)</span>)
+and increases weight of groups that are already close to beeing removed (i.e. small <span class="math notranslate nohighlight">\(QS_{\sigma}(i)(v)\)</span>):</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\mathbf{o}_{i+1}(v) = \begin{cases} 
+    1/QS_{\sigma}(i)(v) &amp; QS_{\sigma}(i)(v) &gt; 0, \\ 
+    C &amp; QS_{\sigma}(i)(v) = 0 
+\end{cases}, \quad \forall v \in V. \end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(C \gg 0\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.InverseResultUpdater.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">last_result</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.InverseResultUpdater.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the updated objective function <span class="math notranslate nohighlight">\(\mathbf{o}_{i+1}\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>last_result</strong> – The past result vector <span class="math notranslate nohighlight">\(QS(i)\)</span>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The updated objective function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Tuple[int,float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.Updater">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">Updater</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">indicator_to_group</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Updater" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract base class for QSHeur-updaters. An updater 
+computes the new objective function <span class="math notranslate nohighlight">\(\mathbf{o}_{i+1}\)</span> after each QSHeur-iteration. Computation may
+or may not be dependent on the last result vector <span class="math notranslate nohighlight">\(QS(i)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The reachability-form that should be minimized.
+Computation of objective function may or may not be dependent on the reachability-form.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – QSHeur-mode, i.e. “max” or “min”</p></li>
+<li><p><strong>indicator_to_group</strong> (<em>utils.InvertibleDict</em>) – mapping from group indices to sets of states/state-action pairs. If label-based
+minimization was not choosen, every group consists of one state/state-action pair only.
+If label-based minimization was choosen, every group corresponds to one of the specified labels
+and yields all states that belong to this label.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.Updater.update">
+<em class="property">abstract </em><code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">last_result</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Updater.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the updated objective function <span class="math notranslate nohighlight">\(\mathbf{o}_{i+1}\)</span> for a QSHeur-run as a list of index/
+coefficient pairings. Every entry is a tuple <span class="math notranslate nohighlight">\((v, \mathbf{o}_{0}(v))\)</span> where <span class="math notranslate nohighlight">\(v\)</span> corresponds
+to some group index <span class="math notranslate nohighlight">\(v \in V\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>last_result</strong> – The past result vector <span class="math notranslate nohighlight">\(QS(i)\)</span>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The updated objective function</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Tuple[int,float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.ProblemFormulation">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">ProblemFormulation</code><a class="headerlink" href="#switss.problem.ProblemFormulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>A ProblemFormulation is an abstract base class for
+problems that are aimed at finding minimal witnesses
+for DTMCs or MDPs.</p>
+<dl class="method">
+<dt id="switss.problem.ProblemFormulation.solve">
+<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">threshold</em>, <em class="sig-param">labels=None</em>, <em class="sig-param">timeout=None</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.ProblemFormulation.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for small subsystems for a given reachability form
+such that the probability of reaching the target state is above
+a given threshold:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{Pr}_{\mathbf{x}}^{*}(\diamond \text{goal}) \geq \lambda\]</div>
+<p>where <span class="math notranslate nohighlight">\(\lambda\)</span> is the given threshold and <span class="math notranslate nohighlight">\(* \in \{\text{min},\text{max}\}\)</span>.</p>
+<p><cite>.solve</cite> returns the final result if multiple solutions are found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The system that should be minimized.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The given threshold.</p></li>
+<li><p><strong>labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of labels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The resulting subsystem.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#switss.problem.Subsystem" title="switss.problem.Subsystem">problem.Subsystem</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.ProblemFormulation.solveiter">
+<code class="sig-name descname">solveiter</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">threshold</em>, <em class="sig-param">labels=None</em>, <em class="sig-param">timeout=None</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.ProblemFormulation.solveiter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches for small subsystems for a given reachability form
+such that the probability of reaching the target state is above
+a given threshold:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{Pr}_{\mathbf{x}}^{*}(\diamond \text{goal}) \geq \lambda\]</div>
+<p>where <span class="math notranslate nohighlight">\(\lambda\)</span> is the given threshold and <span class="math notranslate nohighlight">\(* \in \{\text{min},\text{max}\}\)</span>.</p>
+<p><cite>.solveiter</cite> returns an iterator over all systems that are found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The system that should be minimized.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The given threshold.</p></li>
+<li><p><strong>labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of labels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The resulting subsystem.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#switss.problem.Subsystem" title="switss.problem.Subsystem">problem.Subsystem</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.ProblemFormulation.details">
+<em class="property">abstract property </em><code class="sig-name descname">details</code><a class="headerlink" href="#switss.problem.ProblemFormulation.details" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary that contains information about this instance. Content
+is dependent on respective class and instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.Subsystem">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">Subsystem</code><span class="sig-paren">(</span><em class="sig-param">supersystem</em>, <em class="sig-param">certificate</em>, <em class="sig-param">certform</em>, <em class="sig-param">ignore_consistency_checks=False</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Subsystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>In this context, a subsystem is the combination of a system in reachability form (RF) and 
+a <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate containing 0-entries for all states or state-action pairs
+that should be removed. The Subsystem-class also implements a .subsys-method that automatically generates
+a rechability form of the subsystem, as well as a way of rendering subsystem via calling <cite>.digraph</cite>.</p>
+<p>Instantiates a subsystem from a RF (supersystem) and <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate vector
+specifying the occurence of states or state-action pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>supersystem</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The supersystem</p></li>
+<li><p><strong>certificate</strong> (<em>np.ndarray</em><em>[</em><em>float</em><em>]</em>) – <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional vector containing 0-entries for all states or state
+action pairs that should be removed</p></li>
+<li><p><strong>certform</strong> (<em>str</em>) – Either “min” or “max”. If “min” is choosen, the certificate needs to be <span class="math notranslate nohighlight">\(N\)</span>-dimensional,
+and <span class="math notranslate nohighlight">\(C\)</span> in the other case.</p></li>
+<li><p><strong>ignore_consistency_checks</strong> (<em>bool</em><em>, </em><em>optional</em>) – If set to False, the RF of the generated subsystem will be checked for consistency.
+Setting it to True will cost less time, but may lead to errors later on. Defaults to False</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.Subsystem.certform">
+<em class="property">property </em><code class="sig-name descname">certform</code><a class="headerlink" href="#switss.problem.Subsystem.certform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Informs about the form of this subsystem - if “min” (“max”) the certificate has entries 
+for all states (state-action pairs) that are goal/fail.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.Subsystem.certificate">
+<em class="property">property </em><code class="sig-name descname">certificate</code><a class="headerlink" href="#switss.problem.Subsystem.certificate" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate vector, dependent on <cite>.certform</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.Subsystem.subsystem_mask">
+<em class="property">property </em><code class="sig-name descname">subsystem_mask</code><a class="headerlink" href="#switss.problem.Subsystem.subsystem_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(N\)</span> dimensional boolean vector that contains 1-entries for all states that are in
+the subsystem and 0-entries for all that are not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.Subsystem.supersys">
+<em class="property">property </em><code class="sig-name descname">supersys</code><a class="headerlink" href="#switss.problem.Subsystem.supersys" title="Permalink to this definition">¶</a></dt>
+<dd><p>RF of the supersystem.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.Subsystem.subsys">
+<em class="property">property </em><code class="sig-name descname">subsys</code><a class="headerlink" href="#switss.problem.Subsystem.subsys" title="Permalink to this definition">¶</a></dt>
+<dd><p>RF of the subsystem. On the first call, this will generate the subsystem from the certificate and supersystem which
+may take some time dependent on the size of the system. If <cite>ignore_consistency_checks</cite> was set to True, the generated 
+RF will not be checked for consistency.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="switss.problem.Subsystem.digraph">
+<code class="sig-name descname">digraph</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.Subsystem.digraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a <cite>graphviz.Digraph</cite> object that contains nodes and edges for states and transitions.
+States that are in the subsystem are colored blue while states that are not are colored grey.
+If the choosen certform was “min”, i.e. certificate values for states, then states are accompanied with
+additional information about their values in the certificate. Otherwise, if a certificate for state-action pairs
+was given, this additional information is added to the corresponding actions (irrelevant for DTMCs).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.ProblemResult">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">ProblemResult</code><span class="sig-paren">(</span><em class="sig-param">status</em>, <em class="sig-param">subsystem</em>, <em class="sig-param">value</em>, <em class="sig-param">farkas_cert</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.ProblemResult" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.QSHeur">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">QSHeur</code><span class="sig-paren">(</span><em class="sig-param">mode</em>, <em class="sig-param">iterations=3</em>, <em class="sig-param">initializertype=&lt;class 'switss.problem.qsheurparams.AllOnesInitializer'&gt;</em>, <em class="sig-param">updatertype=&lt;class 'switss.problem.qsheurparams.InverseResultUpdater'&gt;</em>, <em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.QSHeur" title="Permalink to this definition">¶</a></dt>
+<dd><p>The class QSHeur implements a set of iterative heuristics for
+computing small witnessing subsystems. Its goal is to find points in 
+the corresponding Farkas-polytope with a small number of positive entries.
+It works by solving a sequence of LPs similar to the one in MILPExact.
+The <span class="math notranslate nohighlight">\(i\)</span>-th LP is given as</p>
+<div class="math notranslate nohighlight">
+\[\min \mathbf{o}_i \cdot \mathbf{x} \; \text{s.t.} \; \mathbf{x} \in \mathcal{F}(\lambda),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathcal{F}(\lambda)\)</span> is the Farkas (y- or z-)polytope. Also, 
+<span class="math notranslate nohighlight">\(\mathbf{o}_0\)</span> is a vector of initial weights. Weights <span class="math notranslate nohighlight">\(\mathbf{o}_{i}\)</span> for
+<span class="math notranslate nohighlight">\(i&gt;0\)</span> are computed recursively from the past result: <span class="math notranslate nohighlight">\(\mathbf{o}_{i} =
+\operatorname{upd}(QS_{\mathbf{x}}(i-1))\)</span> where <span class="math notranslate nohighlight">\(QS_{\mathbf{x}}(i-1)\)</span> denotes the solution
+to the <span class="math notranslate nohighlight">\((i-1)\)</span>-th LP and <span class="math notranslate nohighlight">\(\operatorname{upd}\)</span> is some update function.</p>
+<p>QSHeur also supports label-based minimizaton. In that case, let <span class="math notranslate nohighlight">\(L\)</span> be a set of labels and 
+<span class="math notranslate nohighlight">\(\Lambda : S \mapsto 2^\mathcal{L}\)</span> a mapping from states to sets of labels. The <span class="math notranslate nohighlight">\(i\)</span>-th LP 
+is then given as</p>
+<div class="math notranslate nohighlight">
+\[\min \mathbf{o}_i \cdot \sigma \; \text{s.t.} \; \mathbf{x} \in \mathcal{P}^{\text{max}}(\lambda) \;
+\text{and} \; \mathbf{x}((s,a)) \leq K \cdot \sigma(l) \;
+\text{for all}\; (s,a) \in \mathcal{M},\; l \in \Lambda(s)    \]</div>
+<p>for the y-form and as</p>
+<div class="math notranslate nohighlight">
+\[\min \mathbf{o}_i \cdot \sigma \; \text{s.t.} \; \mathbf{x} \in \mathcal{P}^{\text{min}}(\lambda) \; 
+\text{and} \; \mathbf{x}(s) \leq \sigma(l),\;
+\text{for all}\; s \in S,\; l \in \Lambda(s) \]</div>
+<p>for the z-form.</p>
+<p>Instantiates a QSHeur from a given mode, a number of iterations and a initializer as well as 
+a updater.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (<em>str</em>) – Either “min” or “max”</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of repeated LP instances, defaults to 3</p></li>
+<li><p><strong>initializertype</strong> (<a class="reference internal" href="#switss.problem.Initializer" title="switss.problem.Initializer"><em>problem.Initializer</em></a><em>, </em><em>optional</em>) – The used initialization-method, defaults to AllOnesInitializer</p></li>
+<li><p><strong>updatertype</strong> (<a class="reference internal" href="#switss.problem.Updater" title="switss.problem.Updater"><em>problem.Updater</em></a><em>, </em><em>optional</em>) – The used update-method, defaults to InverseResultUpdater</p></li>
+<li><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.QSHeur.details">
+<em class="property">property </em><code class="sig-name descname">details</code><a class="headerlink" href="#switss.problem.QSHeur.details" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary with method details. Keys are “type”, “mode”, “solver”, “iterations”, “initializertype”
+and “updatertype”.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="switss.problem.MILPExact">
+<em class="property">class </em><code class="sig-prename descclassname">switss.problem.</code><code class="sig-name descname">MILPExact</code><span class="sig-paren">(</span><em class="sig-param">mode</em>, <em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.problem.MILPExact" title="Permalink to this definition">¶</a></dt>
+<dd><p>MILPExact implements the computation of minimal witnessing subsystems using mixed integer linear programs (MILPs)
+over the corresponding Farkas-polytopes <span class="math notranslate nohighlight">\(\mathcal{F}(\lambda) \in \{ \mathcal{P}^{\text{max}}(\lambda),
+\mathcal{P}^{\text{min}}(\lambda) \}\)</span>. Supported are both the minimization of systems while ignoring the state labels;</p>
+<div class="math notranslate nohighlight">
+\[\min \sum_i \sigma(i) \; \text{s.t.} \; \mathbf{x} \in \mathcal{F}(\lambda)  \;
+\text{and}  \; \mathbf{x}(i) \leq K \cdot \sigma(i),\; \sigma(i) \in \{0,1\},\]</div>
+<p>- where <span class="math notranslate nohighlight">\(K\)</span> is a suitable upper bound (see <a class="reference internal" href="#fjb19" id="id4"><span>[FJB19]</span></a> for more information) -
+and label-based system minimization. In the second case, let <span class="math notranslate nohighlight">\(L\)</span> be a set of labels and 
+<span class="math notranslate nohighlight">\(\Lambda : S \mapsto 2^\mathcal{L}\)</span> a mapping from states to sets of labels. The MILP is then given as</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\min \sum_{l \in L} \sigma(l) \; \text{s.t.} \; \mathbf{x} \in \mathcal{P}^{\text{max}}(\lambda) \; 
+\text{and} \; \mathbf{x}((s,a)) \leq K \cdot \sigma(l),\; \sigma(l) \in \{0,1\}, \\
+\text{for all}\; (s,a) \in \mathcal{M},\; l \in \Lambda(s)   \end{split}\]</div>
+<p>for the y-form and as</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\min \sum_{l \in L} \sigma(l) \; \text{s.t.} \; \mathbf{x} \in \mathcal{P}^{\text{min}}(\lambda) \; 
+\text{and} \; \mathbf{x}(s) \leq \sigma(l),\; \sigma(l) \in \{0,1\}, \\
+\text{for all}\; s \in S,\; l \in \Lambda(s)\end{split}\]</div>
+<p>for the z-form. In both cases, <span class="math notranslate nohighlight">\(\sigma\)</span> is a <span class="math notranslate nohighlight">\(|L|\)</span>-dimensional vector.</p>
+<p>Instantiates a MILPExact instance from a given mode (“min” or “max”) and a solver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (<em>str</em>) – The mode, either “min” or “max”</p></li>
+<li><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver the should be used, defaults to “cbc”</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="switss.problem.MILPExact.details">
+<em class="property">property </em><code class="sig-name descname">details</code><a class="headerlink" href="#switss.problem.MILPExact.details" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary with method details. Keys are “type”, “mode” and “solver”.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-switss.certification">
+<span id="certification"></span><h3>Certification<a class="headerlink" href="#module-switss.certification" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="switss.certification.check_farkas_certificate">
+<code class="sig-prename descclassname">switss.certification.</code><code class="sig-name descname">check_farkas_certificate</code><span class="sig-paren">(</span><em class="sig-param">reach_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">sense</em>, <em class="sig-param">threshold</em>, <em class="sig-param">farkas_vec</em>, <em class="sig-param">tol=1e-08</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.certification.check_farkas_certificate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a reachability form, mode, sense, threshold and candidate vector, checks
+whether the vector is a legal Farkas certificate for the reachability constraint.</p>
+<p>To allow small deviations when checking the certificate conditions one can set the
+tol (for tolerance) parameter (defaults to 1e-8). It is then checked that any constraint 
+deviates by at most the value in tol.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reach_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – RF the certificate should be checked for</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – either “min” or “max”</p></li>
+<li><p><strong>sense</strong> (<em>str</em>) – either “&lt;=”, “&gt;=”, “&lt;” or “&gt;”</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – The threshold that should be used</p></li>
+<li><p><strong>farkas_vec</strong> (<em>np.ndarray</em><em>[</em><em>float</em><em>]</em>) – <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate vector, dependent on mode</p></li>
+<li><p><strong>tol</strong> (<em>float</em><em>, </em><em>optional</em>) – The used tolerance, defaults to 1e-8</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Either True (certificate is valid for used tolerance) or False (that is not the case)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="switss.certification.generate_farkas_certificate">
+<code class="sig-prename descclassname">switss.certification.</code><code class="sig-name descname">generate_farkas_certificate</code><span class="sig-paren">(</span><em class="sig-param">reach_form</em>, <em class="sig-param">mode</em>, <em class="sig-param">sense</em>, <em class="sig-param">threshold</em>, <em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.certification.generate_farkas_certificate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates Farkas certificates for a given reachability form, mode, sense and threshold using the characterizations 
+in Table 1 of <a class="reference internal" href="#fjb19" id="id5"><span>[FJB19]</span></a>. To this end uses an LP solver to find a satisfying vector of the corresponding polytope. 
+For strict inequalities, maximizes (minimizes) the probability and then checks whether the result value is strictly 
+greater than the threshold.</p>
+<p>Since the solvers that are currently supported do not use precise arithmetic, the resulting vectors may deviate from 
+the desired result a bit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reach_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – RF the certificate should be generated for</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – must be either “min” or “max”</p></li>
+<li><p><strong>sense</strong> (<em>str</em>) – must be either “&lt;=”, “&gt;=”, “&lt;” or “&gt;”.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – threshold the certificate should be generated for</p></li>
+<li><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – used solver, must be either “gurobi”, “cbc”, “glpk” or “cplex”, defaults to “cbc”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional vector, dependent on mode</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-switss.benchmarks">
+<span id="benchmarking"></span><h3>Benchmarking<a class="headerlink" href="#module-switss.benchmarks" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="switss.benchmarks.render">
+<code class="sig-prename descclassname">switss.benchmarks.</code><code class="sig-name descname">render</code><span class="sig-paren">(</span><em class="sig-param">run</em>, <em class="sig-param">mode='laststates-thr'</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">title=None</em>, <em class="sig-param">normalize=True</em>, <em class="sig-param">sol_range=None</em>, <em class="sig-param">custom_label=None</em>, <em class="sig-param">plot_no=1</em>, <em class="sig-param">e_mode=False</em>, <em class="sig-param">markersize=6</em>, <em class="sig-param">linewidth=1</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.benchmarks.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renders a benchmark run via matplotlib. <cite>mode</cite> specifies the type of the
+resulting plot, i.e. statecount vs. threshold (‘states-thr’, plots all intermediate results), only
+the last resulting statecount vs. threshold (‘laststates-thr’, plots only the last result), time
+vs. threshold (‘wall_time-thr’/’proc_time-thr’). If no axis is specified, a new subplot is generated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run</strong> – Result of a <cite>run</cite>-call.</p></li>
+<li><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Type of plot, defaults to “states-thr”</p></li>
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em>, </em><em>optional</em>) – Matplotlib-axis that should be used, defaults to None</p></li>
+<li><p><strong>title</strong> (<em>str</em><em>, </em><em>optional</em>) – Title of plot. If None, the method-description will be used, defaults to None</p></li>
+<li><p><strong>normalize</strong> (<em>Bool</em>) – allows to turn off normalization (to x/1000 on the y axis), defaults to “True”</p></li>
+<li><p><strong>sol_range</strong> (<em>List</em><em>, </em><em>optional</em>) – allows to control which of the solutions are plotted per threshold. If None, all available solutions will be plotted.</p></li>
+<li><p><strong>custom_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Allows to define a custom label of the plot. If None, the method type will be used.</p></li>
+<li><p><strong>plot_no</strong> (<em>int</em><em>, </em><em>optional    :return: The axis-object that is created</em><em> or </em><em>specified in the method-call.</em>) – If multiple plots are rendered on the same axis, they can be distinguished by the plot_no parameter. They will then get different markers. Up to three plots (with plot_no 1,2,3) are supported, defaults to 1.</p></li>
+<li><p><strong>e_mode</strong> (<em>Bool</em>) – Prints thresholds in the e-x format, defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="switss.benchmarks.run">
+<code class="sig-prename descclassname">switss.benchmarks.</code><code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">reachability_form</em>, <em class="sig-param">method</em>, <em class="sig-param">from_thr=0.001</em>, <em class="sig-param">to_thr=1</em>, <em class="sig-param">step=0.001</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">json_dir=None</em>, <em class="sig-param">timeout=None</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.benchmarks.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs a benchmark on a given reachability form. The benchmark consists of running the method on the 
+reachability form for varying thresholds. Returns a dictionary which contains result of the specified test. 
+<cite>from_thr</cite> and <cite>to_thr</cite> specify the smallest and greatest  threshold respectively. <cite>step</cite> specifies the 
+resolution (i.e. distance between neighbouring thresholds).</p>
+<p>It is also possible to define multiple methods by giving an iterable (like a list). If 
+that is the case, a list of the generated dataset for each method is returned.</p>
+<p>If method is not an iterable but an instance of a ProblemFormulation, the output is given as a dictionary
+of the form</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;method&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;type&quot;</span> <span class="p">:</span> <span class="n">method_type</span><span class="p">,</span> <span class="o">...</span> <span class="p">},</span>
+  <span class="s2">&quot;run&quot;</span> <span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s2">&quot;threshold&quot;</span> <span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
+              <span class="s2">&quot;statecounts&quot;</span> <span class="p">:</span> <span class="p">[</span><span class="n">statecount1</span><span class="p">,</span> <span class="n">statecount2</span><span class="p">,</span><span class="o">...</span><span class="p">,</span> <span class="n">statecountN</span> <span class="p">],</span>
+              <span class="s2">&quot;wall_times&quot;</span>  <span class="p">:</span> <span class="p">[</span><span class="n">wall_time1</span><span class="p">,</span>  <span class="n">wall_time2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="n">wall_timeN</span> <span class="p">],</span>
+              <span class="s2">&quot;proc_times&quot;</span>  <span class="p">:</span> <span class="p">[</span><span class="n">proc_time1</span><span class="p">,</span>  <span class="n">proc_time2</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="n">wall_timeN</span> <span class="p">]</span> <span class="p">},</span> <span class="o">...</span><span class="p">]</span> <span class="p">}</span>
+</pre></div>
+</div>
+<p>where “method” contains information about the used method (see problem.ProblemUtils.details) and
+“run” contains a list of results for different thresholds. If we pick an element from “run”, 
+“statecounts” will contain the number of states for each found subsystem while running the method 
+on that particular instance. For example, if QSHeur with iterations=5 was choosen, statecounts will
+have N=5 entries (ditto for wall_times and proc_times).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reachability_form</strong> (<a class="reference internal" href="#switss.model.ReachabilityForm" title="switss.model.ReachabilityForm"><em>model.ReachabilityForm</em></a>) – The given reachability form.</p></li>
+<li><p><strong>method</strong> (<a class="reference internal" href="#switss.problem.ProblemFormulation" title="switss.problem.ProblemFormulation"><em>problem.ProblemFormulation</em></a>) – A problem formulation that is evalutated in this benchmark.</p></li>
+<li><p><strong>from_thr</strong> (<em>float</em><em>, </em><em>optional</em>) – Smallest threshold, defaults to 1e-3</p></li>
+<li><p><strong>to_thr</strong> (<em>float</em><em>, </em><em>optional</em>) – Greatest threshold, defaults to 1</p></li>
+<li><p><strong>step</strong> (<em>float</em><em>, </em><em>optional</em>) – Distance between neighbouring thresholds, defaults to 1e-3</p></li>
+<li><p><strong>debug</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, additional output is printed to the console, defaults to False</p></li>
+<li><p><strong>json_dir</strong> (<em>Path</em><em>, </em><em>optional</em>) – Resulting json files will be printed into the directory json_dir</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The generated data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict or List</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="utils">
+<h3>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="switss.utils.color_from_hash">
+<code class="sig-prename descclassname">switss.utils.</code><code class="sig-name descname">color_from_hash</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.utils.color_from_hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derives an inidividual color from an object that can be used for a graphviz-graph. It does so
+by calculating the hash-code of the object which then maps to the respective color.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – some object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a valid graphviz-coloring</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="fjb19"><span class="brackets">FJB19</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>,<a href="#id5">4</a>)</span></dt>
+<dd><p>Funke, F; Jantsch, S; Baier, C: Farkas certificates and minimal witnessing subsystems for probabilistic reachability constraints. (<a class="reference external" href="https://arxiv.org/abs/1910.10636">https://arxiv.org/abs/1910.10636</a>)</p>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">SWITSS</a><ul>
+<li><a class="reference internal" href="#mdp-and-dtmc-classes">MDP and DTMC classes</a><ul>
+<li><a class="reference internal" href="#instantiating-dtmcs">Instantiating DTMCs</a></li>
+<li><a class="reference internal" href="#instantiating-mdps">Instantiating MDPs</a></li>
+<li><a class="reference internal" href="#instantiating-from-prism-model-files">Instantiating from PRISM model files</a></li>
+<li><a class="reference internal" href="#rendering-of-dtmcs-and-mdps">Rendering of DTMCs and MDPs</a></li>
+<li><a class="reference internal" href="#saving-dtmcs-and-mdps">Saving DTMCs and MDPs</a></li>
+<li><a class="reference internal" href="#additional-capabilities">Additional capabilities</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reachabilityform-rf-class">ReachabilityForm (RF) class</a><ul>
+<li><a class="reference internal" href="#reduction-of-dtmcs-mdps-to-reachabilityforms">Reduction of DTMCs/MDPs to ReachabilityForms</a></li>
+<li><a class="reference internal" href="#reachability-probabilities">Reachability probabilities</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#finding-small-subsystems">Finding small subsystems</a><ul>
+<li><a class="reference internal" href="#label-based-minimization">Label-based minimization</a></li>
+<li><a class="reference internal" href="#iterative-results">Iterative results</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#certificates">Certificates</a></li>
+<li><a class="reference internal" href="#benchmarks">Benchmarks</a></li>
+<li><a class="reference internal" href="#modules-classes-reference">Modules &amp; classes reference</a><ul>
+<li><a class="reference internal" href="#module-switss.model">Models</a></li>
+<li><a class="reference internal" href="#problem">Problem</a><ul>
+<li><a class="reference internal" href="#note-on-initializers-and-updaters">Note on Initializers and Updaters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-switss.certification">Certification</a></li>
+<li><a class="reference internal" href="#module-switss.benchmarks">Benchmarking</a></li>
+<li><a class="reference internal" href="#utils">Utils</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">SWITSS  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Jantsch, S; Harder, H; Funke F.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.
+    </div>
+  </body>
+</html>
