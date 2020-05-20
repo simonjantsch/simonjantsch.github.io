@@ -43,7 +43,8 @@
 Discrete Time Markov Chains (DTMCs). SWITSS implements exact and heuristic methods for computing small
 witnessing subsystems by reducing the problem to (mixed integer) linear programming. Returned subsystems
 can automatically be rendered graphically and are accompanied with a certificate which proves that
-the subsystem is indeed a witness. Work is based on <a class="reference internal" href="#fjb19" id="id1"><span>[FJB19]</span></a>.</p>
+the subsystem is indeed a witness. The work is based on <a class="reference internal" href="#fjb19" id="id1"><span>[FJB19]</span></a>.
+A precondition on the MDP that can be handled is that the probability to reach goal or fail is positive under each scheduler.</p>
 <p>Contact: <a class="reference external" href="mailto:hans&#46;harder&#37;&#52;&#48;mailbox&#46;tu-dresden&#46;de">hans<span>&#46;</span>harder<span>&#64;</span>mailbox<span>&#46;</span>tu-dresden<span>&#46;</span>de</a></p>
 <div class="section" id="mdp-and-dtmc-classes">
 <h2>MDP and DTMC classes<a class="headerlink" href="#mdp-and-dtmc-classes" title="Permalink to this headline">¶</a></h2>
@@ -56,7 +57,7 @@ the subsystem is indeed a witness. Work is based on <a class="reference internal
 </ul>
 <p>Also,</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(\text{Act}(s) \subseteq \text{Act}\)</span> denotes the set of actions that can be enabled in state <span class="math notranslate nohighlight">\(s\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(\text{Act}(s) \subseteq \text{Act}\)</span> denotes the set of actions that are enabled in state <span class="math notranslate nohighlight">\(s\)</span>.</p></li>
 <li><p>For a set of states <span class="math notranslate nohighlight">\(S\)</span> and whenever suitable, <span class="math notranslate nohighlight">\(\mathcal{M}_S = \{ (s,a) \in S \times \text{Act} \mid a \in \text{Act}(s) \}\)</span> also denotes the set of state-action-pairs.</p></li>
 <li><p>For a set of states <span class="math notranslate nohighlight">\(S\)</span>,  <span class="math notranslate nohighlight">\(C_{S} = | \mathcal{M}_{S} |\)</span> denotes the amount of state-action-pairs and <span class="math notranslate nohighlight">\(N_S = | S |\)</span> the amount of states.</p></li>
 </ul>
@@ -70,7 +71,7 @@ state-action pair <span class="math notranslate nohighlight">\((s,a) \in \mathca
 <h3>Instantiating DTMCs<a class="headerlink" href="#instantiating-dtmcs" title="Permalink to this headline">¶</a></h3>
 <p>DTMCs can be easily instantiated from transition matrices and optional state labelings. Allowed types for the transition matrix include
 numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instances of scipy.sparse.spmatrix).</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">P</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
 <span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
 <span class="gp">... </span>     <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
@@ -90,10 +91,10 @@ numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instanc
 <h3>Instantiating MDPs<a class="headerlink" href="#instantiating-mdps" title="Permalink to this headline">¶</a></h3>
 <p>Like DTMCs, MDPs require a transition matrix and optional state labelings. Additional parameters include</p>
 <ul class="simple">
-<li><p>a index_by_state_action dictionary that maps state-action-pairs to their corresponding row-index in the transition matrix,</p></li>
+<li><p>a dictionary (called index_by_state_action) that maps state-action-pairs to their corresponding row-index in the transition matrix,</p></li>
 <li><p>and an optional labeling for state-action pairs.</p></li>
 </ul>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">MDP</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">index_by_state_action</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">4</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">actionlabels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">},</span> <span class="s2">&quot;B&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">P</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
@@ -111,8 +112,8 @@ numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instanc
 </div>
 <div class="section" id="instantiating-from-prism-model-files">
 <h3>Instantiating from PRISM model files<a class="headerlink" href="#instantiating-from-prism-model-files" title="Permalink to this headline">¶</a></h3>
-<p>SWITSS supports the instantiation of MDPs and DTMCs from .lab and .tra, as well as from .pm files:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<p>SWITSS supports the instantiation of MDPs and DTMCs from .lab and .tra, as well as from PRISM .pm/.nm files:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/brp.pm&quot;</span><span class="p">,</span>
 <span class="gp">... </span>                          <span class="n">prism_constants</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;N&quot;</span><span class="p">,</span><span class="mi">2</span><span class="p">),(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)},</span>
 <span class="gp">... </span>                          <span class="n">extra_labels</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;uncertain&quot;</span><span class="p">,</span><span class="s2">&quot;s=5 &amp; srep=2&quot;</span><span class="p">),(</span><span class="s2">&quot;all&quot;</span><span class="p">,</span><span class="s2">&quot;true&quot;</span><span class="p">)})</span>
@@ -120,7 +121,7 @@ numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instanc
 <span class="go">DTMC(C=62, N=62, labels={init (1), deadlock (6), uncertain (2), all (62)})</span>
 </pre></div>
 </div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">MDP</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">MDP</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/csma-2-2.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/csma-2-2.tra&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span>
 <span class="go">MDP(C=1054, N=1038, labels={init (1), deadlock (0), all_delivered (3), one_delivered (179), collision_max_backoff (2)})</span>
@@ -131,10 +132,10 @@ numpy arrays (or matrices), ordinary 2d-lists and scipy sparse matrices (instanc
 </div>
 <div class="section" id="rendering-of-dtmcs-and-mdps">
 <h3>Rendering of DTMCs and MDPs<a class="headerlink" href="#rendering-of-dtmcs-and-mdps" title="Permalink to this headline">¶</a></h3>
-<p>In order to make plotting DTMCs and MDPs more customizable, SWITSS implements a <cite>.digraph</cite>-method on DTMCs and MDPs which returns
-<cite>graphviz.Digraph</cite> instances (see <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">here</a>). Changing default behaviour can be obtained
+<p>Plotting DTMCs and MDPs is highly customizable. SWITSS implements a <cite>.digraph</cite>-method on DTMCs and MDPs which returns
+<cite>graphviz.Digraph</cite> instances (see <a class="reference external" href="https://www.graphviz.org/doc/info/attrs.html">here</a>). The default behaviour can be changed
 by specifying functions that return graphviz attribute settings for nodes and edges:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span>
 <span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/crowds.pm&quot;</span><span class="p">,</span>
                        <span class="n">prism_constants</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;TotalRuns&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;CrowdSize&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)},</span>
                        <span class="n">extra_labels</span><span class="o">=</span><span class="p">{(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span><span class="s2">&quot;observe0&gt;1&quot;</span><span class="p">)})</span>
@@ -151,7 +152,7 @@ by specifying functions that return graphviz attribute settings for nodes and ed
 <span class="n">M</span><span class="o">.</span><span class="n">digraph</span><span class="p">(</span><span class="n">state_map</span><span class="o">=</span><span class="n">state_map</span><span class="p">,</span> <span class="n">trans_map</span><span class="o">=</span><span class="n">trans_map</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">MDP</span>
 <span class="n">M</span> <span class="o">=</span> <span class="n">MDP</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/test.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/test.tra&quot;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">state_map</span><span class="p">(</span><span class="n">stateidx</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
@@ -180,7 +181,7 @@ Additional information about graphviz attributes can be found at <a class="refer
 <div class="section" id="saving-dtmcs-and-mdps">
 <h3>Saving DTMCs and MDPs<a class="headerlink" href="#saving-dtmcs-and-mdps" title="Permalink to this headline">¶</a></h3>
 <p>DTMCs and MDPs can be saved as a .tra/.lab files. In order to so, calling <cite>.save(..)</cite> suffices:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">MDP</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">MDP</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">DTMC</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">)</span>
 <span class="go">(&#39;example.tra&#39;, &#39;example.lab&#39;)</span>
@@ -218,8 +219,8 @@ Additional information about graphviz attributes can be found at <a class="refer
 <li><p>every state is reachable from the initial state (fail doesn’t need to be reachable) and</p></li>
 <li><p>every state reaches the goal state (except the fail state).</p></li>
 </ul>
-<p>This kind of DTMC/MDP is one of the core components of SWITSS, since this enables the matrices and vectors that are
-essential for the farkas constraints defined in <a class="reference internal" href="#fjb19">FJB19</a> (see table 1):</p>
+<p>This kind of DTMC/MDP is one of the core components of SWITSS, since the definitions of Farkas certificates (<a class="reference internal" href="#fjb19">FJB19</a>, Table 1) can be easily derived thereof.
+A further assumption that is needed is that the probability to reach goal or fail is positive under each scheduler.</p>
 <p>In this context,</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(S = S_{\text{all}} \backslash \{ \text{goal}, \text{fail} \}\)</span>,</p></li>
@@ -234,7 +235,7 @@ essential for the farkas constraints defined in <a class="reference internal" hr
 <div class="section" id="reduction-of-dtmcs-mdps-to-reachabilityforms">
 <h3>Reduction of DTMCs/MDPs to ReachabilityForms<a class="headerlink" href="#reduction-of-dtmcs-mdps-to-reachabilityforms" title="Permalink to this headline">¶</a></h3>
 <p>RFs support the reduction of DTMCs/MDPs that do not fulfill the criteria to DTMCs/MDPs that do:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
 <span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3.tra&quot;</span><span class="p">)</span>
 <span class="n">Mrf</span><span class="p">,</span> <span class="n">state_map</span><span class="p">,</span> <span class="n">state_action_map</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
 <span class="n">Mrf</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">digraph</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
@@ -244,7 +245,7 @@ essential for the farkas constraints defined in <a class="reference internal" hr
 from states (state-action pairs) in <cite>M</cite> to states (state-action pairs) in <cite>Mrf.system</cite>. If a state (state-action pair) does not
 occur in the mapping, it was removed on the way.</p>
 <p>If is also possible to directly instantiate a RF from a DTMC/MDP that already is in reachability form:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
 <span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
 <span class="n">Mrf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
 </pre></div>
@@ -254,7 +255,7 @@ occur in the mapping, it was removed on the way.</p>
 <h3>Reachability probabilities<a class="headerlink" href="#reachability-probabilities" title="Permalink to this headline">¶</a></h3>
 <p>RFs implement methods for computing maximal and minimal reachability probabilities <span class="math notranslate nohighlight">\(\mathbf{Pr}^{\text{max}}(\diamond goal)\)</span> and
 <span class="math notranslate nohighlight">\(\mathbf{Pr}^{\text{min}}(\diamond goal)\)</span>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">MDP</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
 <span class="n">index_by_state_action</span> <span class="o">=</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
 <span class="n">actionlabels</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">},</span> <span class="s2">&quot;B&quot;</span> <span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
 
@@ -269,7 +270,7 @@ occur in the mapping, it was removed on the way.</p>
             <span class="s2">&quot;init&quot;</span>  <span class="p">:</span> <span class="p">{</span><span class="mi">0</span><span class="p">}}</span>
 
 <span class="n">mdp</span> <span class="o">=</span> <span class="n">MDP</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">index_by_state_action</span><span class="p">,</span> <span class="n">actionlabels</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
-<span class="n">rf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">mdp</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">)</span>
+<span class="n">rf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">mdp</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">rf</span><span class="o">.</span><span class="n">pr_max</span><span class="p">(),</span> <span class="n">rf</span><span class="o">.</span><span class="n">pr_min</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -279,9 +280,9 @@ occur in the mapping, it was removed on the way.</p>
 <h2>Finding small subsystems<a class="headerlink" href="#finding-small-subsystems" title="Permalink to this headline">¶</a></h2>
 <p>In order to search for small subsystems, methods for exact solutions (MILP formulation) and heuristic approaches
 (quotient sum heuristic) are implemented:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span><span class="p">,</span> <span class="n">QSHeur</span>
-<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">InverseFrequencyInitializer</span><span class="p">,</span> <span class="n">InverseReachabilityInitializer</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">MILPExact</span><span class="p">,</span> <span class="n">QSHeur</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">InverseFrequencyInitializer</span><span class="p">,</span> <span class="n">InverseReachabilityInitializer</span>
 
 <span class="n">milpmin</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
 <span class="n">milpmax</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;gurobi&quot;</span><span class="p">)</span>
@@ -302,11 +303,11 @@ occur in the mapping, it was removed on the way.</p>
 <p>Here, <cite>MILPExact</cite> corresponds to the MILP Formulation and <cite>QSHeur</cite> to the quotient sum heuristic (see <a class="reference internal" href="#switss.problem.QSHeur" title="switss.problem.QSHeur"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.QSHeur</span></code></a>
 and <a class="reference internal" href="#switss.problem.MILPExact" title="switss.problem.MILPExact"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.MILPExact</span></code></a> for more information on how to specify additional parameters).</p>
 <p>Results of such minimizations are given as <a class="reference internal" href="#switss.problem.ProblemResult" title="switss.problem.ProblemResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.ProblemResult</span></code></a> instances which contain the objective value of the
-solved MILP/LPs, a <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional certificate (dependent on whether “max” or “min” was choosen) and a
+solved MILP/LPs, a <span class="math notranslate nohighlight">\(N\)</span> or <span class="math notranslate nohighlight">\(C\)</span> dimensional Farkas certificate (dependent on whether “min” or “max” was choosen) and a
 <a class="reference internal" href="#switss.problem.Subsystem" title="switss.problem.Subsystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">switss.problem.Subsystem</span></code></a>-object that contains reachability forms for both super- and subsystem and, additionally, a method
 for rendering subsystems with their corresponding certificate values:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">QSHeur</span>
 <span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
 <span class="n">rf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="s2">&quot;init&quot;</span><span class="p">)</span>
 <span class="n">qs</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
@@ -318,8 +319,8 @@ for rendering subsystems with their corresponding certificate values:</p>
 <h3>Label-based minimization<a class="headerlink" href="#label-based-minimization" title="Permalink to this headline">¶</a></h3>
 <p>SWITSS also implements label-based minimization, i.e. minimization based on the number of labels in a system. To do so, one can
 add lists of labels to <cite>MILPExact</cite> or <cite>QSHeur</cite> instances:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">MILPExact</span>
 
 <span class="n">P</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
       <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
@@ -357,8 +358,8 @@ For exectuable examples, see <a class="reference external" href="https://github.
 <p>Repeated application of <cite>QSHeur</cite> yields multiple small subsystems along the way. By calling <cite>.solveiter</cite> instead
 of <cite>.solve</cite> on <cite>problem.ProblemFormulation</cite> instances, one can iterate over these solutions. In fact, <cite>.solve</cite> uses <cite>.solveiter</cite>
 itself and returns only the last result:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">QSHeur</span>
 <span class="n">mc</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
 <span class="n">rf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">mc</span><span class="p">)</span>
 <span class="n">qs</span> <span class="o">=</span> <span class="n">QSHeur</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
@@ -371,10 +372,10 @@ itself and returns only the last result:</p>
 </div>
 <div class="section" id="certificates">
 <h2>Certificates<a class="headerlink" href="#certificates" title="Permalink to this headline">¶</a></h2>
-<p>SWITSS supports the generation and the checking of farkas certificates. This can be used, for example, for validating the results
+<p>SWITSS supports the generation and the checking of Farkas certificates. This can be used, for example, for validating the results
 of solved problem instances:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="kn">import</span> <span class="n">generate_farkas_certificate</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="k">import</span> <span class="n">generate_farkas_certificate</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/leader_sync3_2.pm&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">,</span><span class="s2">&quot;elected&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">generate_farkas_certificate</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
@@ -386,11 +387,11 @@ of solved problem instances:</p>
 <span class="go">       1.        ])</span>
 </pre></div>
 </div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">MILPExact</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">MILPExact</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_prism_model</span><span class="p">(</span><span class="s2">&quot;datasets/leader_sync3_2.pm&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">,</span><span class="s2">&quot;elected&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="kn">import</span> <span class="n">check_farkas_certificate</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.certification</span> <span class="k">import</span> <span class="n">check_farkas_certificate</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">milp</span> <span class="o">=</span> <span class="n">MILPExact</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">milp</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Mrf</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">farkas_cert</span>
@@ -408,9 +409,9 @@ For executable examples, see
 <h2>Benchmarks<a class="headerlink" href="#benchmarks" title="Permalink to this headline">¶</a></h2>
 <p>In order to make heuristics or exact solutions better comparable, one can run benchmarks on different models, with different
 methods and for varying thresholds. Benchmarks can also be plotted with the help of <cite>matplotlib</cite> for fast visualization:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="kn">import</span> <span class="n">QSHeur</span><span class="p">,</span> <span class="n">MILPExact</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.benchmarks</span> <span class="kn">import</span> <span class="n">benchmarks</span> <span class="k">as</span> <span class="n">bm</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="kn">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.problem</span> <span class="k">import</span> <span class="n">QSHeur</span><span class="p">,</span> <span class="n">MILPExact</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.benchmarks</span> <span class="k">import</span> <span class="n">benchmarks</span> <span class="k">as</span> <span class="n">bm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">switss.model</span> <span class="k">import</span> <span class="n">DTMC</span><span class="p">,</span> <span class="n">ReachabilityForm</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">M</span> <span class="o">=</span> <span class="n">DTMC</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;datasets/crowds-2-3-rf.lab&quot;</span><span class="p">,</span> <span class="s2">&quot;datasets/crowds-2-3-rf.tra&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Mrf</span> <span class="o">=</span> <span class="n">ReachabilityForm</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
@@ -990,7 +991,7 @@ key in the dictionary, it was removed.</p>
 <code class="sig-name descname">max_y_state_action</code><span class="sig-paren">(</span><em class="sig-param">solver='cbc'</em><span class="sig-paren">)</span><a class="headerlink" href="#switss.model.ReachabilityForm.max_y_state_action" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a solution to the LP</p>
 <div class="math notranslate nohighlight">
-\[\max \, \sum_{(s,a)} \mathbf{x}((s,a)) \quad \text{ subject to } \quad \mathbf{x} \in \mathcal{P}^{\text{max}}(0)\]</div>
+\[\max \, \mathbf{b} \, \mathbf{x} \quad \text{ subject to } \quad \mathbf{x} \in \mathcal{P}^{\text{max}}(0)\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Solver that should be used, defaults to “cbc”</p>
@@ -1068,11 +1069,11 @@ key in the dictionary, it was removed.</p>
 <h3>Problem<a class="headerlink" href="#problem" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="note-on-initializers-and-updaters">
 <h4>Note on Initializers and Updaters<a class="headerlink" href="#note-on-initializers-and-updaters" title="Permalink to this headline">¶</a></h4>
-<p>The Initializer and Updater-classes rely ‘groups’ of states/state-action pairs for
+<p>The Initializer and Updater-classes rely on ‘groups’ of states/state-action pairs for
 computing initial/updated objective functions in order unify the concept of label-based and
-default minimization. If label-based minimization was choosen, every
+default minimization. If label-based minimization was chosen, every
 group corresponds to some label and thereby to a set of states that have this label.
-If label-based minimization was not choosen, every group corresponds to some state or
+If label-based minimization was not chosen, every group corresponds to some state or
 state-action pair (i.e. every group has only one member).</p>
 <p>The objective functions that are returned are given as lists of group-index/group-weight pairings.
 For now, define that <span class="math notranslate nohighlight">\(V = \{ v_1, \dots, v_m \}\)</span> is the set of group indices, i.e. every objective function
@@ -1723,7 +1724,7 @@ by calculating the hash-code of the object which then maps to the respective col
 <p class="rubric">References</p>
 <dl class="citation">
 <dt class="label" id="fjb19"><span class="brackets">FJB19</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>,<a href="#id5">4</a>)</span></dt>
-<dd><p>Funke, F; Jantsch, S; Baier, C: Farkas certificates and minimal witnessing subsystems for probabilistic reachability constraints. (<a class="reference external" href="https://arxiv.org/abs/1910.10636">https://arxiv.org/abs/1910.10636</a>)</p>
+<dd><p>Funke, F; Jantsch, S; Baier, C: Farkas certificates and minimal witnessing subsystems for probabilistic reachability constraints. (<a class="reference external" href="https://link.springer.com/chapter/10.1007/978-3-030-45190-5_18">https://link.springer.com/chapter/10.1007/978-3-030-45190-5_18</a>)</p>
 </dd>
 </dl>
 </div>
